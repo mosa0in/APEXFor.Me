@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "socraticode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "socraticode"
+      ],
+      "env": {
+        "SOCRATICODE_PROJECT_ROOT": "C:\\Users\\MSI\\.gemini\\antigravity\\scratch\\curriculum-parser"
+      }
+    }
+  }
+}

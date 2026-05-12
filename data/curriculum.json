@@ -1,0 +1,2205 @@
+{
+  "book_title": "Thomas' Calculus",
+  "authors": [
+    "George B. Thomas Jr."
+  ],
+  "edition": "",
+  "language": "mixed",
+  "chapters": [
+    {
+      "id": "ch1",
+      "number": 1,
+      "title": "Functions",
+      "summary": "Introduces functions, their graphs, combinations, transformations, and trigonometric functions.",
+      "sections": [
+        {
+          "id": "sec1_1",
+          "title": "Functions and Their Graphs",
+          "page_start": 13,
+          "concepts": [
+            {
+              "id": "con1_1_1",
+              "name": "Natural Domain of a Function",
+              "description": "The largest set of real numbers for which the function formula gives real, defined output values.",
+              "prerequisites": [],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_1_1_1",
+                  "text": "Find the natural domain and graph the function f(x) = 5 - 2x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Linear function defined for all real x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_2",
+                  "text": "Find the natural domain and graph the function f(x) = 1 - 2x - x^2.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Quadratic function defined for all real x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_3",
+                  "text": "Find the natural domain and graph g(x) = 2|x|.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Absolute value function defined for all real x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_4",
+                  "text": "Find the natural domain and graph g(x) = 2^(-x).",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Exponential function defined for all real x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_5",
+                  "text": "Find the natural domain and graph F(t) = t/|t|.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Defined for all t ≠ 0; equals 1 for t>0 and -1 for t<0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_6",
+                  "text": "Find the natural domain and graph G(t) = 1/|t|.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Defined for all t ≠ 0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_7",
+                  "text": "Find the domain of y = (x+3)/(4 - sqrt(x^2 - 9)).",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Require x^2 - 9 >= 0 and 4 - sqrt(x^2-9) ≠ 0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_1_8",
+                  "text": "Find the range of y = (2 + x^2)/(x^2 + 4).",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Set y = (2+x^2)/(x^2+4) and solve for x in terms of y.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_1_2",
+              "name": "Graphs of Functions and the Vertical Line Test",
+              "description": "A curve in the xy-plane is the graph of a function of x if and only if no vertical line intersects the curve more than once.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_1_2_1",
+                  "text": "Graph |y| = x and explain why it is not the graph of a function of x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "For each positive x, there are two y values (positive and negative).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_2_2",
+                  "text": "Graph y^2 = x^2 and explain why it is not the graph of a function of x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Gives y = ±x, two values for most x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_2_3",
+                  "text": "Graph |x| + |y| = 1 and explain why it is not the graph of a function of x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Diamond shape fails vertical line test.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_2_4",
+                  "text": "Graph |x + y| = 1 and explain why it is not the graph of a function of x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Gives two lines, fails vertical line test.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_1_3",
+              "name": "Piecewise-Defined Functions",
+              "description": "Functions defined by different formulas on different parts of their domain.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_1_3_1",
+                  "text": "Graph f(x) = {x, 0<=x<=1; 2-x, 1<x<=2}.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Two line segments meeting at (1,1).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_3_2",
+                  "text": "Graph g(x) = {1-x, 0<=x<=1; 2-x, 1<x<=2}.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Two line segments; check continuity at x=1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_3_3",
+                  "text": "Graph F(x) = {4-x^2, x<=1; x^2+2x, x>1}.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Parabola pieces; check continuity at x=1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_3_4",
+                  "text": "Graph G(x) = {1/x, x<0; x, x>=0}.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Hyperbola for x<0, ray for x>=0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_3_5",
+                  "text": "Find a formula for each function graphed in Exercises 29-32.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Identify slopes and intercepts from graph to write piecewise formulas.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_1_4",
+              "name": "Proportionality and Applied Functions",
+              "description": "Using direct and inverse proportionality to model real-world relationships as functions.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [
+                "K = c*v^2 (direct proportion)",
+                "r*s = k (inverse proportion)",
+                "PV = k (Boyle's Law)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_1_4_1",
+                  "text": "Let L be the distance between the points (x,y) and (4,0). Write L as a function of y.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Use distance formula: L = sqrt((x-4)^2 + y^2), then express x in terms of y if on a curve.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_2",
+                  "text": "The kinetic energy K of a mass is proportional to the square of its velocity v. If K=12,960 joules when v=18 m/s, what is K when v=10 m/s?",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Find constant of proportionality k = K/v^2, then compute K for v=10.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_3",
+                  "text": "The variables r and s are inversely proportional, and r=6 when s=4. Determine s when r=10.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "rs = constant = 24; s = 24/10 = 2.4.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_4",
+                  "text": "Boyle's Law: If P=14.7 lb/in^2 when V=1000 in^3, what is V when P=23.4 lb/in^2?",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "PV = constant; V = 14700/23.4.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_5",
+                  "text": "A box with open top is constructed from a 14x22 in. cardboard by cutting squares of side x at each corner. Express volume V as a function of x.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "V = x(14-2x)(22-2x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_6",
+                  "text": "A rectangle is inscribed in an isosceles right triangle with hypotenuse 2 units. Express the y-coordinate of P in terms of x, and express the area of the rectangle in terms of x.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Line AB has equation y = 1-x; Area = 2x(1-x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_7",
+                  "text": "Three hundred books sell for $40 each. For each $5 increase in price, 25 fewer books are sold. Write revenue R as a function of the number x of $5 increases.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "R = (300-25x)(40+5x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_8",
+                  "text": "A pen shaped as an isosceles right triangle with legs x ft and hypotenuse h ft. Fencing costs $5/ft for legs and $10/ft for hypotenuse. Write total cost C as a function of h.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Legs = h/sqrt(2) each; C = 2*(5*(h/sqrt(2))) + 10h.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_4_9",
+                  "text": "A power plant is next to a river 800 ft wide. A cable goes to a city 2 mi downstream on the opposite side. Cost is $180/ft across river and $100/ft along land. Write C(x) for cost in terms of x (distance from directly opposite point).",
+                  "difficulty": "hard",
+                  "question_type": "calculation",
+                  "answer_hint": "C(x) = 180*sqrt(800^2 + x^2) + 100*(10560 - x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_1_5",
+              "name": "Symmetry and Graph Analysis",
+              "description": "Understanding even/odd symmetry and x-axis symmetry in relation to functions.",
+              "prerequisites": [
+                "con1_1_2"
+              ],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_1_5_1",
+                  "text": "Match equations y=x^4, y=x^7, y=x^10 to their graphs without a graphing device.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Even powers are symmetric about y-axis; odd powers are not.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_5_2",
+                  "text": "Match equations y=5x, y=5^x, y=x^5 to their graphs without a graphing device.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Distinguish linear, exponential, and odd-power functions.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_5_3",
+                  "text": "For a curve symmetric about the x-axis, explain why it cannot be the graph of a function unless y=0.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "If (x,y) and (x,-y) both lie on the curve, the vertical line test fails unless y=0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_5_4",
+                  "text": "Graph f(x)=x/2 and g(x)=1+(4/x) to identify values of x for which x/2 > 1+4/x, then confirm algebraically.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Find intersection points and test intervals.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_1_5_5",
+                  "text": "Graph f(x)=3/(x-1) and g(x)=2/(x+1) to identify values of x for which 3/(x-1) < 2/(x+1), then confirm algebraically.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Find intersection points and test intervals, noting domain restrictions.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_2",
+          "title": "Combining Functions; Shifting and Scaling Graphs",
+          "page_start": 14,
+          "concepts": [
+            {
+              "id": "con1_2_1",
+              "name": "Algebraic Combinations of Functions",
+              "description": "Functions can be added, subtracted, multiplied, and divided to produce new functions. The domain of the combined function is the intersection of the domains of the original functions.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [
+                "(f+g)(x) = f(x) + g(x)",
+                "(f-g)(x) = f(x) - g(x)",
+                "(fg)(x) = f(x)g(x)",
+                "(f/g)(x) = f(x)/g(x), g(x) ≠ 0"
+              ],
+              "questions": [
+                {
+                  "id": "q1_2_1_1",
+                  "text": "Find the domains and ranges of f, g, f+g, and f*g where f(x)=x and g(x)=sqrt(x-1).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Domain of f+g and f*g is intersection: [1, infinity).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_1_2",
+                  "text": "Find the domains and ranges of f, g, f+g, and f*g where f(x)=sqrt(x+1) and g(x)=sqrt(x-1).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Domain of f+g is [1, infinity).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_1_3",
+                  "text": "Find the domains and ranges of f, g, f/g, and g/f where f(x)=2 and g(x)=x^2+1.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "f/g defined everywhere; g/f defined everywhere.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_1_4",
+                  "text": "Find the domains and ranges of f, g, f/g, and g/f where f(x)=1 and g(x)=1+sqrt(x).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "g/f defined for x>=0; f/g defined where g≠0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_2_2",
+              "name": "Composite Functions",
+              "description": "The composite function f∘g is defined by (f∘g)(x) = f(g(x)). The domain consists of numbers x in the domain of g for which g(x) lies in the domain of f.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [
+                "(f∘g)(x) = f(g(x))"
+              ],
+              "questions": [
+                {
+                  "id": "q1_2_2_1",
+                  "text": "If f(x)=x+5 and g(x)=x^2-3, find f(g(0)), g(f(0)), f(g(x)), g(f(x)), f(f(-5)), g(g(2)), f(f(x)), g(g(x)).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Substitute systematically: f(g(0))=f(-3)=2, etc.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_2",
+                  "text": "If f(x)=x-1 and g(x)=1/(x+1), find f(g(1/2)), g(f(1/2)), f(g(x)), g(f(x)), f(f(2)), g(g(2)), f(f(x)), g(g(x)).",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Watch domain restrictions when composing.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_3",
+                  "text": "Write a formula for f∘g∘h where f(x)=x+1, g(x)=3x, h(x)=4-x.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "f(g(h(x))) = f(g(4-x)) = f(3(4-x)) = 3(4-x)+1 = 13-3x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_4",
+                  "text": "Write a formula for f∘g∘h where f(x)=3x+4, g(x)=2x-1, h(x)=x^2.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Compose step by step.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_5",
+                  "text": "Write a formula for f∘g∘h where f(x)=sqrt(x+1), g(x)=1/(x+4), h(x)=1/x.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "h(x)=1/x, g(h(x))=1/(1/x+4), then apply f.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_6",
+                  "text": "Write a formula for f∘g∘h where f(x)=(x+2)/(3-x), g(x)=x^2/(x^2+1), h(x)=sqrt(2-x).",
+                  "difficulty": "hard",
+                  "question_type": "calculation",
+                  "answer_hint": "Compose step by step, tracking domain restrictions.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_7",
+                  "text": "Express y=sqrt(x-3) as a composite of f(x)=x-3, g(x)=sqrt(x), h(x)=x^3, j(x)=sqrt(x).",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "y = g∘f.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_8",
+                  "text": "Copy and complete the table: given g(x) and f(x), find (f∘g)(x) or missing function.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Work backwards from (f∘g)(x) to find missing g or f.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_9",
+                  "text": "Evaluate f(g(-1)), g(f(0)), f(f(-1)), g(g(2)), g(f(-2)), f(g(1)) using the given table of values.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Read values from table and substitute.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_10",
+                  "text": "Evaluate composite expressions using f(x)=2-x and g(x)={-x, -2<=x<0; x-1, 0<=x<=2}.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Determine which piece of g applies before composing.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_11",
+                  "text": "For f(x)=sqrt(x+1) and g(x)=1/x, write formulas for f∘g and g∘f and find domain and range of each.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "f∘g: domain x>0; g∘f: domain x>=-1, x≠-1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_12",
+                  "text": "For f(x)=x^2 and g(x)=1-2x, write formulas for f∘g and g∘f and find domain and range of each.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "f∘g(x)=(1-2x)^2; g∘f(x)=1-2x^2.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_13",
+                  "text": "Let f(x)=x/(x-2). Find g(x) so that (f∘g)(x)=x.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve f(g(x))=x for g(x): g(x)=2x/(x-1).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_2_14",
+                  "text": "Let f(x)=2x^3-4. Find g(x) so that (f∘g)(x)=x+2.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve 2(g(x))^3-4=x+2 for g(x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_2_3",
+              "name": "Shifting Graphs",
+              "description": "Vertical and horizontal shifts of function graphs obtained by adding constants to the output or input of a function.",
+              "prerequisites": [
+                "con1_1_2"
+              ],
+              "key_formulas": [
+                "y = f(x) + k: shifts graph up k units (k>0) or down |k| units (k<0)",
+                "y = f(x+h): shifts graph left h units (h>0) or right |h| units (h<0)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_2_3_1",
+                  "text": "The graph of y=-x^2 is shifted to two new positions. Write equations for the new graphs.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Identify vertical/horizontal shifts from the figure.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_2",
+                  "text": "The graph of y=x^2 is shifted to two new positions. Write equations for the new graphs.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Identify vertical/horizontal shifts from the figure.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_3",
+                  "text": "Match equations y=(x-1)^2-4, y=(x-2)^2+2, y=(x+2)^2+2, y=(x+3)^2-2 to the graphs.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertex of each parabola identifies the position.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_4",
+                  "text": "The graph of y=-x^2 is shifted to four new positions with vertices at (-2,3), (1,4), (2,0), (-4,-1). Write equations.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "y = -(x-h)^2 + k for each vertex (h,k).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_5",
+                  "text": "Shift x^2+y^2=49 down 3 and left 2. Give the equation for the shifted graph.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "(x+2)^2+(y+3)^2=49.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_6",
+                  "text": "Shift y=x^3 left 1 and down 1. Give the equation and sketch.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y=(x+1)^3-1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_7",
+                  "text": "Graph y=sqrt(x+4).",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Shift y=sqrt(x) left 4 units.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_3_8",
+                  "text": "Graph y=|x-2|-1.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Shift y=|x| right 2 and down 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_2_4",
+              "name": "Scaling and Reflecting Graphs",
+              "description": "Stretching or compressing a graph vertically or horizontally by multiplying the function or its argument by a constant. Reflections are special cases with c=-1.",
+              "prerequisites": [
+                "con1_1_2",
+                "con1_2_3"
+              ],
+              "key_formulas": [
+                "y = cf(x): stretches vertically by factor c (c>1)",
+                "y = (1/c)f(x): compresses vertically by factor c (c>1)",
+                "y = f(cx): compresses horizontally by factor c (c>1)",
+                "y = f(x/c): stretches horizontally by factor c (c>1)",
+                "y = -f(x): reflects across x-axis",
+                "y = f(-x): reflects across y-axis"
+              ],
+              "questions": [
+                {
+                  "id": "q1_2_4_1",
+                  "text": "Give an equation for y=x^2-1 stretched vertically by a factor of 3.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y = 3(x^2-1) = 3x^2-3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_2",
+                  "text": "Give an equation for y=x^2-1 compressed horizontally by a factor of 2.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y = (2x)^2-1 = 4x^2-1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_3",
+                  "text": "Give an equation for y=1+1/x^2 compressed vertically by a factor of 2.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y = (1/2)(1+1/x^2).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_4",
+                  "text": "Give an equation for y=1+1/x^2 stretched horizontally by a factor of 3.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y = 1+1/(x/3)^2 = 1+9/x^2.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_5",
+                  "text": "Give an equation for y=sqrt(4-x^2) stretched horizontally by a factor of 2.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "y = sqrt(4-(x/2)^2) = sqrt(4-x^2/4).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_6",
+                  "text": "Given f(x)=x^4-4x^3+10, find the formula for the graph compressed horizontally by factor 2 then reflected across y-axis.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Substitute -2x for x: y=(-2x)^4-4(-2x)^3+10=16x^4+32x^3+10.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_4_7",
+                  "text": "Given f(x)=x^4-4x^3+10, find the formula for the graph compressed vertically by factor 2 then reflected across x-axis.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "y = -(1/2)f(x) = -x^4/2+2x^3-5.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_2_5",
+              "name": "Even and Odd Functions",
+              "description": "A function is even if f(-x)=f(x) and odd if f(-x)=-f(x). Products and compositions of even/odd functions follow specific rules.",
+              "prerequisites": [
+                "con1_1_1"
+              ],
+              "key_formulas": [
+                "Even: f(-x) = f(x)",
+                "Odd: f(-x) = -f(x)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_2_5_1",
+                  "text": "Assume f is even and g is odd. Determine which of fg, f/g, g/f, f^2, g^2, f∘g, g∘f, f∘f, g∘g are even or odd.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Use definitions: (fg)(-x)=f(-x)g(-x)=f(x)(-g(x))=-(fg)(x), so fg is odd.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_2_5_2",
+                  "text": "Can a function be both even and odd? Give reasons.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Yes, only f(x)=0 satisfies both conditions.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_3",
+          "title": "Trigonometric Functions",
+          "page_start": 21,
+          "concepts": [
+            {
+              "id": "con1_3_1",
+              "name": "Radian Measure",
+              "description": "Angles measured in radians where the radian measure equals the arc length divided by the radius. One full revolution = 2π radians = 360°.",
+              "prerequisites": [],
+              "key_formulas": [
+                "θ = s/r (radians)",
+                "s = rθ",
+                "π radians = 180°",
+                "1 radian ≈ 57.3°",
+                "1° = π/180 radians"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_3_2",
+              "name": "The Six Basic Trigonometric Functions",
+              "description": "Sine, cosine, tangent, cosecant, secant, and cotangent defined in terms of coordinates of a point on a circle of radius r.",
+              "prerequisites": [
+                "con1_3_1"
+              ],
+              "key_formulas": [
+                "sin θ = y/r",
+                "cos θ = x/r",
+                "tan θ = y/x",
+                "csc θ = r/y",
+                "sec θ = r/x",
+                "cot θ = x/y",
+                "tan θ = sin θ/cos θ",
+                "cot θ = 1/tan θ",
+                "sec θ = 1/cos θ",
+                "csc θ = 1/sin θ"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_3_3",
+              "name": "Exact Trigonometric Values for Special Angles",
+              "description": "Exact values of sin, cos, tan for angles π/6, π/4, π/3 and their multiples derived from special right triangles.",
+              "prerequisites": [
+                "con1_3_2"
+              ],
+              "key_formulas": [
+                "sin(π/4) = cos(π/4) = 1/√2",
+                "sin(π/6) = 1/2, cos(π/6) = √3/2, tan(π/6) = 1/√3",
+                "sin(π/3) = √3/2, cos(π/3) = 1/2, tan(π/3) = √3"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_3_4",
+              "name": "Periodicity of Trigonometric Functions",
+              "description": "The six trigonometric functions are periodic. Sine, cosine, secant, and cosecant have period 2π; tangent and cotangent have period π.",
+              "prerequisites": [
+                "con1_3_2"
+              ],
+              "key_formulas": [
+                "sin(x + 2π) = sin x",
+                "cos(x + 2π) = cos x",
+                "tan(x + π) = tan x",
+                "cot(x + π) = cot x",
+                "sec(x + 2π) = sec x",
+                "csc(x + 2π) = csc x"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_3_5",
+              "name": "Graphs of Trigonometric Functions",
+              "description": "Graphs of the six basic trigonometric functions showing domain, range, and period. Sine and cosine have range [-1,1]; tangent and cotangent have range (-∞,∞); secant and cosecant have range (-∞,-1]∪[1,∞).",
+              "prerequisites": [
+                "con1_3_4"
+              ],
+              "key_formulas": [],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_3_6",
+              "name": "CAST Rule",
+              "description": "A mnemonic for remembering the signs of trigonometric functions in each quadrant: All positive in Q1, Sine positive in Q2, Tangent positive in Q3, Cosine positive in Q4.",
+              "prerequisites": [
+                "con1_3_2"
+              ],
+              "key_formulas": [],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_4",
+          "title": "Graphing with Software",
+          "page_start": 29,
+          "concepts": [
+            {
+              "id": "con1_4_1",
+              "name": "Viewing Windows and Graphing Software",
+              "description": "Understanding how the choice of viewing window affects the displayed graph; square vs. non-square windows and their distortions.",
+              "prerequisites": [],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_4_1_1",
+                  "text": "For f(x) = x⁴ − 7x² + 6x, which of the given viewing windows displays the most appropriate graph: (a) [−1,1]×[−1,1], (b) [−2,2]×[−5,5], (c) [−10,10]×[−10,10], (d) [−5,5]×[−25,15]?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Choose the window that shows all key features including local extrema.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_1_2",
+                  "text": "For f(x) = x³ − 4x² − 4x + 16, which viewing window is most appropriate: (a) [−1,1]×[−5,5], (b) [−3,3]×[−10,10], (c) [−5,5]×[−10,20], (d) [−20,20]×[−100,100]?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Look for the window showing all roots and turning points.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_1_3",
+                  "text": "For f(x) = 5 + 12x − x³, which viewing window is most appropriate: (a) [−1,1]×[−1,1], (b) [−5,5]×[−10,10], (c) [−4,4]×[−20,20], (d) [−4,5]×[−15,25]?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "The cubic has a local max and min; choose window showing both.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_1_4",
+                  "text": "For f(x) = √(25 + 4x − x²), which viewing window is most appropriate: (a) [−2,2]×[−2,2], (b) [−2,6]×[−1,4], (c) [−3,7]×[0,10], (d) [−10,10]×[−10,10]?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Find the domain first: 25 + 4x − x² ≥ 0.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_4_2",
+              "name": "Finding Appropriate Viewing Windows",
+              "description": "Selecting viewing windows that capture the overall behavior of various functions including polynomials, rational functions, and trigonometric functions.",
+              "prerequisites": [
+                "con1_4_1"
+              ],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_4_2_1",
+                  "text": "Find an appropriate viewing window for f(x) = x⁴ − 4x³ + 15 and display its graph.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Try [−2, 5] × [−10, 30] to capture the minimum.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_2",
+                  "text": "Find an appropriate viewing window for f(x) = x³/3 − x²/2 − 2x + 1 and display its graph.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Find critical points to determine appropriate range.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_3",
+                  "text": "Find an appropriate viewing window for f(x) = x⁵ − 5x⁴ + 10 and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "The function has a local min near x = 4.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_4",
+                  "text": "Find an appropriate viewing window for f(x) = 4x³ − x⁴ and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Roots at x = 0 and x = 4; local max between them.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_5",
+                  "text": "Find an appropriate viewing window for f(x) = x√(9 − x²) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain: [−3, 3].",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_6",
+                  "text": "Find an appropriate viewing window for f(x) = x²(6 − x³) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Root at x = 0 (double) and x = 6^(1/3).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_7",
+                  "text": "Find an appropriate viewing window for y = 2x − 3x^(2/3) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Check behavior near x = 0 and for large x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_8",
+                  "text": "Find an appropriate viewing window for y = x^(1/3)(x² − 8) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Roots at x = 0 and x = ±2√2.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_9",
+                  "text": "Find an appropriate viewing window for y = 5x^(2/5) − 2x and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Check for local max near x = 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_10",
+                  "text": "Find an appropriate viewing window for y = x^(2/3)(5 − x) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Roots at x = 0 and x = 5.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_11",
+                  "text": "Find an appropriate viewing window for y = |x² − 1| and display its graph.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "V-shapes at x = ±1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_12",
+                  "text": "Find an appropriate viewing window for y = |x² − x| and display its graph.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Zeros at x = 0 and x = 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_13",
+                  "text": "Find an appropriate viewing window for y = (x + 3)/(x + 2) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical asymptote at x = −2; horizontal asymptote at y = 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_14",
+                  "text": "Find an appropriate viewing window for y = 1 − 1/(x + 3) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical asymptote at x = −3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_15",
+                  "text": "Find an appropriate viewing window for f(x) = (x² + 2)/(x² + 1) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "No vertical asymptotes; horizontal asymptote at y = 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_16",
+                  "text": "Find an appropriate viewing window for f(x) = (x² − 1)/(x² + 1) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Roots at x = ±1; horizontal asymptote at y = 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_17",
+                  "text": "Find an appropriate viewing window for f(x) = (x − 1)/(x² − x − 6) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical asymptotes at x = 3 and x = −2.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_18",
+                  "text": "Find an appropriate viewing window for f(x) = 8/(x² − 9) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical asymptotes at x = ±3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_19",
+                  "text": "Find an appropriate viewing window for f(x) = (6x² − 15x + 6)/(4x² − 10x) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Factor numerator and denominator to find asymptotes and holes.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_20",
+                  "text": "Find an appropriate viewing window for f(x) = (x² − 3)/(x − 2) and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical asymptote at x = 2; oblique asymptote.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_21",
+                  "text": "Find an appropriate viewing window for y = sin 250x and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Period = 2π/250 ≈ 0.025; use a very small window.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_4_2_22",
+                  "text": "Find an appropriate viewing window for y = 3 cos 60x and display its graph.",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Period = 2π/60 ≈ 0.105; use a small window.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_4_3",
+              "name": "Regression Analysis and Trend Curves",
+              "description": "Using least squares regression to find linear or polynomial curves that capture the trend of collected data; scatterplots and regression curves.",
+              "prerequisites": [
+                "con1_4_1"
+              ],
+              "key_formulas": [
+                "Least squares minimizes sum of squared vertical distances"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_4_4",
+              "name": "Obtaining Complete Graphs with Software",
+              "description": "Addressing software limitations such as missing branches for functions with negative inputs, steep near-vertical lines at asymptotes, and rapidly oscillating functions.",
+              "prerequisites": [
+                "con1_4_1"
+              ],
+              "key_formulas": [
+                "f(x) = (x/|x|)·|x|^(1/3) as workaround for x^(1/3)"
+              ],
+              "questions": [],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_5",
+          "title": "Exponential Functions",
+          "page_start": 36,
+          "concepts": [
+            {
+              "id": "con1_5_1",
+              "name": "Exponential Behavior and Definition",
+              "description": "An exponential function f(x) = a^x where a > 0 and a ≠ 1. The variable appears in the exponent. Exponential functions model doubling, compound interest, and other multiplicative growth processes.",
+              "prerequisites": [],
+              "key_formulas": [
+                "f(x) = a^x, a > 0, a ≠ 1",
+                "A = P(1 + r)^x (compound interest annually)",
+                "a^n = a * a * ... * a (n factors)",
+                "a^0 = 1",
+                "a^(-n) = 1/a^n",
+                "a^(1/n) = nth root of a",
+                "a^(p/q) = (qth root of a)^p"
+              ],
+              "questions": [
+                {
+                  "id": "q1_5_1_1",
+                  "text": "In 2014, $100 is invested in a savings account with 5.5% interest compounded annually. Give a formula for the amount A after x years.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "A = 100 * (1.055)^x",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_1_2",
+                  "text": "Sketch the curves y = 2^x, y = 4^x, y = 3^(-x), y = (1/5)^x together and label each.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Larger base means steeper growth; negative exponent means decay.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_1_3",
+                  "text": "Sketch y = 2^(-t) and y = -2^t.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "2^(-t) is a decay curve above x-axis; -2^t is a growth curve below x-axis.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_1_4",
+                  "text": "Sketch y = e^x and y = 1/e^x.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "1/e^x = e^(-x), which is the reflection of e^x across the y-axis.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_1_5",
+                  "text": "Sketch the shifted exponential curves y = 2^x - 1 and y = 2^(-x) - 1.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Shift the standard exponential curves down by 1 unit.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_5_2",
+              "name": "Rules for Exponents",
+              "description": "Algebraic rules governing operations with exponential expressions for positive bases and all real exponents.",
+              "prerequisites": [
+                "con1_5_1"
+              ],
+              "key_formulas": [
+                "a^x * a^y = a^(x+y)",
+                "a^x / a^y = a^(x-y)",
+                "(a^x)^y = a^(xy)",
+                "a^x * b^x = (ab)^x",
+                "a^x / b^x = (a/b)^x"
+              ],
+              "questions": [
+                {
+                  "id": "q1_5_2_1",
+                  "text": "Simplify 16^2 * 16^(-1.75).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Use rule 1: add exponents. 16^(2 - 1.75) = 16^0.25.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_2",
+                  "text": "Simplify 9^(1/3) * 9^(1/6).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Add exponents: 9^(1/3 + 1/6) = 9^(1/2) = 3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_3",
+                  "text": "Simplify 4^4.2 / 4^3.7.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Subtract exponents: 4^(4.2 - 3.7) = 4^0.5 = 2.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_4",
+                  "text": "Simplify 3^(5/3) / 3^(2/3).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Subtract exponents: 3^(5/3 - 2/3) = 3^1 = 3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_5",
+                  "text": "Simplify 125^(1/8*4).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Apply rule 3: (125^(1/8))^4 = 125^(4/8) = 125^(1/2).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_6",
+                  "text": "Simplify 2^(sqrt(3)) * 7^(sqrt(3)).",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Use rule 4: (2*7)^sqrt(3) = 14^sqrt(3).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_7",
+                  "text": "Simplify (2/sqrt(2))^4.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "2/sqrt(2) = sqrt(2), so (sqrt(2))^4 = 4.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_2_8",
+                  "text": "Simplify (sqrt(6)/3)^2.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Square numerator and denominator: 6/9 = 2/3.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_5_3",
+              "name": "The Natural Exponential Function e^x",
+              "description": "The natural exponential function f(x) = e^x uses the irrational base e ≈ 2.71828. It is the unique exponential function whose graph has slope exactly 1 when crossing the y-axis, making it fundamental to calculus.",
+              "prerequisites": [
+                "con1_5_1",
+                "con1_5_2"
+              ],
+              "key_formulas": [
+                "e ≈ 2.718281828",
+                "f(x) = e^x",
+                "slope of y = e^x at x=0 is 1"
+              ],
+              "questions": [
+                {
+                  "id": "q1_5_3_1",
+                  "text": "Find the domain and range of f(x) = 1/(2 + e^x).",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain: all reals; Range: (0, 1/2) since e^x > 0 always.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_3_2",
+                  "text": "Find the domain and range of g(t) = cos(e^(-t)).",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain: all reals; e^(-t) in (0, inf), so range is [cos values over (0,inf)].",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_3_3",
+                  "text": "Find the domain and range of g(t) = sqrt(1 + 3^(-t)).",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain: all reals; 3^(-t) > 0 so 1 + 3^(-t) > 1, range is (1, inf).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_3_4",
+                  "text": "Find the domain and range of f(x) = 3/(1 - e^(2x)).",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain: all x ≠ 0; analyze sign of denominator for range.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_5_4",
+              "name": "Exponential Growth and Decay",
+              "description": "Models of the form y = y0 * e^(kx) describe exponential growth (k > 0) or decay (k < 0). Applications include compound interest, population growth, radioactive decay, and disease spread.",
+              "prerequisites": [
+                "con1_5_3"
+              ],
+              "key_formulas": [
+                "y = y0 * e^(kx)",
+                "y = P * e^(rt) (continuous compound interest)",
+                "y = y0 * e^(-rt) (radioactive decay)",
+                "y = A * e^(-1.2e-4 * t) (carbon-14 decay)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_5_4_1",
+                  "text": "Use the model y = Pe^(rt) to track the growth of $100 invested in 2014 at 5.5% annual interest. Predict the amount after 4 years.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "y(4) = 100 * e^(0.055*4) = 100 * e^0.22 ≈ $124.61",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_2",
+                  "text": "Carbon-14 decays with rate r = 1.2e-4 per year. Predict the percent of carbon-14 remaining after 866 years.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "y(866) = y0 * e^(-1.2e-4 * 866) ≈ 0.901 * y0, so about 90% remains.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_3",
+                  "text": "Use graphs to find approximate solutions to 2^x = 5.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "x ≈ log(5)/log(2) ≈ 2.32",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_4",
+                  "text": "Use graphs to find approximate solutions to e^x = 4.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "x = ln(4) ≈ 1.386",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_5",
+                  "text": "Use graphs to find approximate solutions to 3^x - 0.5 = 0.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "3^x = 0.5, x = log(0.5)/log(3) ≈ -0.631",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_6",
+                  "text": "Use graphs to find approximate solutions to 3 - 2^(-x) = 0.",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "2^(-x) = 3, x = -log(3)/log(2) ≈ -1.585",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_7",
+                  "text": "Population growth: The population of Knoxville is 500,000 and is increasing at 3.75% per year. Approximately when will the population reach 1 million?",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve 500000 * e^(0.0375t) = 1000000; t = ln(2)/0.0375 ≈ 18.5 years.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_8",
+                  "text": "Population of Silver Run was 6250 in 1890, growing at 2.75% per year. Estimate population in 1915 and 1940, and when it reached 50,000.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Use P(t) = 6250 * e^(0.0275t); t=25 for 1915, t=50 for 1940.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_9",
+                  "text": "Radioactive decay: The half-life of phosphorus-32 is about 14 days. There are 6.6 grams present initially. Express the amount remaining as a function of time t, and find when 1 gram remains.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "y(t) = 6.6 * e^(-ln2/14 * t); set y = 1 and solve for t.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_10",
+                  "text": "Jean invests $2300 at 6% interest compounded annually. How long until the balance reaches $4150?",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve 2300*(1.06)^t = 4150; t = log(4150/2300)/log(1.06).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_11",
+                  "text": "Determine how much time is required for an investment to double at 6.25% compounded annually.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve (1.0625)^t = 2; t = log(2)/log(1.0625).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_12",
+                  "text": "Determine how much time is required for an investment to triple at 5.75% compounded continuously.",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve e^(0.0575t) = 3; t = ln(3)/0.0575.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_13",
+                  "text": "A colony of bacteria starts with 1 bacterium and doubles every half hour. How many bacteria after 24 hours?",
+                  "difficulty": "easy",
+                  "question_type": "calculation",
+                  "answer_hint": "Number of doublings = 48; total = 2^48.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_5_4_14",
+                  "text": "Suppose the number of disease cases is reduced by 20% each year from 10,000. How many years to reduce to 1000? To less than 1?",
+                  "difficulty": "medium",
+                  "question_type": "calculation",
+                  "answer_hint": "Solve 10000*(0.8)^t = 1000 and 10000*(0.8)^t < 1.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_6",
+          "title": "Inverse Functions and Logarithms",
+          "page_start": 41,
+          "concepts": [
+            {
+              "id": "con1_6_1",
+              "name": "One-to-One Functions",
+              "description": "A function is one-to-one if distinct inputs always produce distinct outputs. One-to-one functions pass the horizontal line test and are the only functions that can have inverses.",
+              "prerequisites": [],
+              "key_formulas": [
+                "f(x1) ≠ f(x2) whenever x1 ≠ x2 (definition of one-to-one)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_6_1_1",
+                  "text": "Is f(x) = sqrt(x) one-to-one on its natural domain? Explain.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Yes, because sqrt(x1) ≠ sqrt(x2) whenever x1 ≠ x2 for nonneg x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_6_1_2",
+                  "text": "Is g(x) = sin x one-to-one on [0, pi]? On [0, pi/2]?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Not on [0,pi] (sin(pi/6)=sin(5pi/6)); yes on [0,pi/2] where it is increasing.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            },
+            {
+              "id": "con1_6_2",
+              "name": "Inverse Functions",
+              "description": "The inverse function f^(-1) of a one-to-one function f reverses the mapping: f^(-1)(b) = a if f(a) = b. The domain and range of f and f^(-1) are interchanged. The graph of f^(-1) is the reflection of f across y = x.",
+              "prerequisites": [
+                "con1_6_1"
+              ],
+              "key_formulas": [
+                "f^(-1)(b) = a if f(a) = b",
+                "(f^(-1) ∘ f)(x) = x for all x in domain of f",
+                "(f ∘ f^(-1))(y) = y for all y in domain of f^(-1)"
+              ],
+              "questions": [
+                {
+                  "id": "q1_6_2_1",
+                  "text": "Given a one-to-one function y = f(x) by a table of values, construct the table for f^(-1)(y).",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Interchange the x and f(x) columns in the table.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_6_2_2",
+                  "text": "Explain why only a one-to-one function can have an inverse.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "If f(x1) = f(x2) = y for x1 ≠ x2, then f^(-1)(y) cannot be uniquely defined.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_6_2_3",
+                  "text": "Describe how to find the graph of f^(-1) from the graph of f.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Reflect the graph of f across the line y = x.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        },
+        {
+          "id": "sec1_review",
+          "title": "Chapter 1 Review: Questions to Guide Your Review",
+          "page_start": 54,
+          "concepts": [
+            {
+              "id": "con1_review_1",
+              "name": "Chapter 1 Review Questions",
+              "description": "Comprehensive review questions covering all major topics of Chapter 1: functions, graphs, transformations, trigonometry, exponentials, logarithms, and inverse functions.",
+              "prerequisites": [
+                "con1_6_1",
+                "con1_6_3",
+                "con1_6_6"
+              ],
+              "key_formulas": [],
+              "questions": [
+                {
+                  "id": "q1_r_1",
+                  "text": "What is a function? What is its domain? Its range? What is an arrow diagram for a function? Give examples.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "A function assigns exactly one output to each input; domain is the set of inputs, range is the set of outputs.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_2",
+                  "text": "What is the graph of a real-valued function of a real variable? What is the vertical line test?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "The graph is the set of points (x, f(x)); vertical line test: each vertical line meets the graph at most once.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_3",
+                  "text": "What is a piecewise-defined function? Give examples.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "A function defined by different formulas on different parts of its domain.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_4",
+                  "text": "What are the important types of functions frequently encountered in calculus? Give an example of each type.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Polynomial, rational, algebraic, trigonometric, exponential, logarithmic.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_5",
+                  "text": "What is meant by an increasing function? A decreasing function? Give an example of each.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Increasing: f(x₁) < f(x₂) when x₁ < x₂; decreasing: f(x₁) > f(x₂) when x₁ < x₂.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_6",
+                  "text": "What is an even function? An odd function? What symmetry properties do their graphs have?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Even: f(-x) = f(x), symmetric about y-axis; Odd: f(-x) = -f(x), symmetric about origin.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_7",
+                  "text": "If f and g are real-valued functions, how are the domains of f+g, f-g, fg, and f/g related to the domains of f and g?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Domain of combinations is intersection of domains of f and g (excluding zeros of g for f/g).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_8",
+                  "text": "When is it possible to compose one function with another? Does the order of composition matter?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Range of g must lie in domain of f for f∘g; order generally matters.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_9",
+                  "text": "How do you change y = f(x) to shift its graph vertically or horizontally? Give examples.",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical: y = f(x) ± k; Horizontal: y = f(x ± h).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_10",
+                  "text": "How do you compress or stretch the graph of y = f(x) by a factor c > 1? Reflect across a coordinate axis?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Vertical stretch: y = cf(x); horizontal compression: y = f(cx); reflections: y = -f(x) or y = f(-x).",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_11",
+                  "text": "What is radian measure? How do you convert between radians and degrees?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "Radians = degrees × π/180; degrees = radians × 180/π.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_12",
+                  "text": "Graph the six basic trigonometric functions. What symmetries do the graphs have?",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "sin and tan are odd; cos is even; others derived from these.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_13",
+                  "text": "What is a periodic function? Give examples. What are the periods of the six basic trigonometric functions?",
+                  "difficulty": "easy",
+                  "question_type": "conceptual",
+                  "answer_hint": "sin, cos, csc, sec have period 2π; tan, cot have period π.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_14",
+                  "text": "Starting with sin²θ + cos²θ = 1 and the formulas for cos(A+B) and sin(A+B), show how other trigonometric identities may be derived.",
+                  "difficulty": "medium",
+                  "question_type": "proof",
+                  "answer_hint": "Derive double angle, half angle, and sum-to-product formulas.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                },
+                {
+                  "id": "q1_r_15",
+                  "text": "How does the formula f(x) = A sin((2π/B)(x-C)) + D relate to shifting, stretching, compressing, and reflecting the graph of y = sin x?",
+                  "difficulty": "medium",
+                  "question_type": "conceptual",
+                  "answer_hint": "A = amplitude, B = period, C = horizontal shift, D = vertical shift.",
+                  "correct_answer": "",
+                  "options": [],
+                  "concept_id": "",
+                  "is_diagnostic": false,
+                  "bloom_level": 2
+                }
+              ],
+              "is_core": true,
+              "difficulty_level": 0.5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

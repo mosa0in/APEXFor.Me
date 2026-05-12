@@ -1,0 +1,182 @@
+{
+  "student_id": "student_demo_001",
+  "session_id": "diag_student_demo_001_2026-05-12",
+  "mastery_snapshots": {
+    "con1": {
+      "concept_id": "con1",
+      "concept_name": "Domain and Range",
+      "mastery_estimate": 0.3571428571428572,
+      "mastery_level": "learning",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.25
+      },
+      "attempts": 1,
+      "correct_count": 1,
+      "last_response_correct": true,
+      "confidence_avg": 5.0,
+      "timestamp": "2026-05-12T02:45:53.355616"
+    },
+    "con2": {
+      "concept_id": "con2",
+      "concept_name": "Types of Functions",
+      "mastery_estimate": 0.55,
+      "mastery_level": "learning",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.1
+      },
+      "attempts": 1,
+      "correct_count": 1,
+      "last_response_correct": true,
+      "confidence_avg": 4.0,
+      "timestamp": "2026-05-12T02:45:53.355634"
+    },
+    "con3": {
+      "concept_id": "con3",
+      "concept_name": "Sine and Cosine",
+      "mastery_estimate": 0.55,
+      "mastery_level": "learning",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.1
+      },
+      "attempts": 1,
+      "correct_count": 1,
+      "last_response_correct": true,
+      "confidence_avg": 2.0,
+      "timestamp": "2026-05-12T02:45:53.355657"
+    },
+    "con4": {
+      "concept_id": "con4",
+      "concept_name": "Limits of Functions",
+      "mastery_estimate": 0.55,
+      "mastery_level": "learning",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.1
+      },
+      "attempts": 1,
+      "correct_count": 1,
+      "last_response_correct": true,
+      "confidence_avg": 5.0,
+      "timestamp": "2026-05-12T02:45:53.355642"
+    },
+    "con5": {
+      "concept_id": "con5",
+      "concept_name": "One-Sided Limits",
+      "mastery_estimate": 0.55,
+      "mastery_level": "learning",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.1
+      },
+      "attempts": 1,
+      "correct_count": 1,
+      "last_response_correct": true,
+      "confidence_avg": 3.0,
+      "timestamp": "2026-05-12T02:45:53.355648"
+    },
+    "con6": {
+      "concept_id": "con6",
+      "concept_name": "Continuous Functions",
+      "mastery_estimate": 0.11097560975609756,
+      "mastery_level": "not_mastered",
+      "bkt_params": {
+        "p_know": 0.1,
+        "p_transit": 0.1,
+        "p_slip": 0.1,
+        "p_guess": 0.1
+      },
+      "attempts": 1,
+      "correct_count": 0,
+      "last_response_correct": false,
+      "confidence_avg": 3.0,
+      "timestamp": "2026-05-12T02:45:53.355666"
+    }
+  },
+  "diagnostic_complete": true,
+  "diagnostic_responses": [
+    {
+      "question_id": "q1",
+      "concept_id": "con1",
+      "selected_answer": "",
+      "is_correct": true,
+      "confidence": 5,
+      "time_spent_ms": 84272,
+      "student_explanation": ""
+    },
+    {
+      "question_id": "q2",
+      "concept_id": "con2",
+      "selected_answer": "",
+      "is_correct": true,
+      "confidence": 4,
+      "time_spent_ms": 53719,
+      "student_explanation": ""
+    },
+    {
+      "question_id": "q4",
+      "concept_id": "con4",
+      "selected_answer": "",
+      "is_correct": true,
+      "confidence": 5,
+      "time_spent_ms": 62319,
+      "student_explanation": ""
+    },
+    {
+      "question_id": "q5",
+      "concept_id": "con5",
+      "selected_answer": "",
+      "is_correct": true,
+      "confidence": 3,
+      "time_spent_ms": 86047,
+      "student_explanation": ""
+    },
+    {
+      "question_id": "q3",
+      "concept_id": "con3",
+      "selected_answer": "",
+      "is_correct": true,
+      "confidence": 2,
+      "time_spent_ms": 20996,
+      "student_explanation": ""
+    },
+    {
+      "question_id": "q6",
+      "concept_id": "con6",
+      "selected_answer": "",
+      "is_correct": false,
+      "confidence": 3,
+      "time_spent_ms": 81015,
+      "student_explanation": ""
+    }
+  ],
+  "graph_entry_point": "con6",
+  "weakest_concepts": [
+    "con6",
+    "con1",
+    "con2",
+    "con3",
+    "con4"
+  ],
+  "strongest_concepts": [
+    "con2",
+    "con3",
+    "con4",
+    "con5",
+    "con1"
+  ],
+  "created_at": "2026-05-12T02:45:53.355507",
+  "last_updated": "2026-05-12T02:45:53.355507"
+}

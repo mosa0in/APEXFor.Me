@@ -1,0 +1,9 @@
+# SocratiCode Ignore
+node_modules/
+__pycache__/
+*.pyc
+.env
+data/sinkt_data/
+*.pkl
+*.npz
+neo4j-reference/
