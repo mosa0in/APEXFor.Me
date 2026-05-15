@@ -16,6 +16,9 @@ class Settings:
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-sonnet-4-20250514")
 
+    # --- LLM (Gemini) ---
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
     # --- Neo4j Knowledge Graph ---
     NEO4J_URI: str = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     NEO4J_USERNAME: str = os.getenv("NEO4J_USERNAME", "neo4j")

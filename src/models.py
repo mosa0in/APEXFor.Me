@@ -7,7 +7,7 @@ Tracking:  Student → MasterySnapshot → DiagnosticSession → Response
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 from datetime import datetime
 
@@ -29,6 +29,11 @@ class Question(BaseModel):
     is_diagnostic: bool = Field(default=False, description="Suitable for diagnostic test?")
     bloom_level: int = Field(default=2, description="Bloom's taxonomy level 1-6")
 
+    @field_validator("options", mode="before")
+    @classmethod
+    def coerce_none_to_list(cls, v):
+        return v if v is not None else []
+
 
 class Concept(BaseModel):
     """A teachable concept or topic within a section."""
@@ -37,9 +42,11 @@ class Concept(BaseModel):
     description: str = Field(description="Detailed explanation of the concept")
     prerequisites: list[str] = Field(default_factory=list, description="IDs of prerequisite concepts")
     key_formulas: list[str] = Field(default_factory=list, description="Important formulas")
-    questions: list[Question] = Field(default_factory=list, description="Questions testing this concept")
+    questions: list[Question] = Field(default_factory=list, description="Sample/diagnostic questions")
     is_core: bool = Field(default=True, description="Is this a core/main concept for diagnostics?")
     difficulty_level: float = Field(default=0.5, description="Concept difficulty 0.0-1.0")
+    exercise_count: int = Field(default=0, description="Total exercises for this concept (from highest number)")
+    exercise_range: str = Field(default="", description="Exercise range e.g. '1-12'")
 
 
 class Section(BaseModel):
@@ -48,6 +55,7 @@ class Section(BaseModel):
     title: str = Field(description="Section title")
     page_start: int = Field(default=0, description="Starting page in PDF")
     concepts: list[Concept] = Field(default_factory=list)
+    total_exercises: int = Field(default=0, description="Total exercises in this section (highest number)")
 
 
 class Chapter(BaseModel):
@@ -73,6 +81,19 @@ class Curriculum(BaseModel):
 
     @property
     def total_questions(self) -> int:
+        """Total questions using accurate exercise_count, falling back to extracted samples."""
+        total = sum(sec.total_exercises for ch in self.chapters for sec in ch.sections)
+        if total > 0:
+            return total
+        # Fallback: count from per-concept exercise_count or extracted questions
+        return sum(
+            con.exercise_count if con.exercise_count > 0 else len(con.questions)
+            for ch in self.chapters for sec in ch.sections for con in sec.concepts
+        )
+
+    @property
+    def total_sample_questions(self) -> int:
+        """Count of actually extracted sample questions (subset of total)."""
         return sum(len(con.questions) for ch in self.chapters for sec in ch.sections for con in sec.concepts)
 
     def get_all_concepts(self) -> list[Concept]:
@@ -172,6 +193,23 @@ class MasterySnapshot(BaseModel):
         self.timestamp = datetime.now().isoformat()
 
 
+class MindsetClass(str, Enum):
+    """Student mindset classification from gap analysis."""
+    CONCEPTUAL = "conceptual"        # Understands and can explain
+    PROCEDURAL = "procedural"        # Follows steps without deep understanding
+    GUESSING = "guessing"            # Neither understands nor explains
+    METACOGNITIVE = "metacognitive"  # Knows they don't know (best for learning)
+
+
+class MindsetResult(BaseModel):
+    """Output of Mindset Gap Analysis (Layer 7)."""
+    mindset: MindsetClass = Field(default=MindsetClass.GUESSING)
+    bloom_level: int = Field(default=1, ge=1, le=6, description="Bloom's Taxonomy 1-6")
+    zpd_zone: str = Field(default="below_zpd", description="mastered|upper_zpd|active_zpd|below_zpd")
+    explanation_quality: float = Field(default=0.0, description="0.0-1.0")
+    gap_score: float = Field(default=0.0, description="|correctness - explanation_quality|")
+
+
 class DiagnosticResponse(BaseModel):
     """A single student response during the diagnostic test."""
     question_id: str
@@ -181,6 +219,8 @@ class DiagnosticResponse(BaseModel):
     confidence: int = Field(default=3, ge=1, le=5, description="Student confidence 1-5")
     time_spent_ms: int = Field(default=0, description="Time spent in milliseconds")
     student_explanation: str = Field(default="", description="How the student explains their reasoning")
+    weighted_correct: float = Field(default=-1.0, description="Denoised score 0.0-1.0, -1=not yet computed")
+    mindset_result: MindsetResult | None = Field(default=None, description="Mindset analysis result")
 
 
 class StudentState(BaseModel):
@@ -199,6 +239,7 @@ class StudentState(BaseModel):
     graph_entry_point: str = Field(default="", description="Concept ID where student starts in KG")
     weakest_concepts: list[str] = Field(default_factory=list, description="Sorted weakest → strongest")
     strongest_concepts: list[str] = Field(default_factory=list)
+    mindset_history: list[MindsetResult] = Field(default_factory=list, description="History of mindset analyses")
     created_at: str = Field(default="")
     last_updated: str = Field(default="")
 

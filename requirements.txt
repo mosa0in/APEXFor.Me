@@ -1,30 +1,21 @@
-# === Core Framework ===
-langchain>=0.3.0
-langchain-community>=0.3.0
-langchain-neo4j>=0.2.0
+# === API Framework ===
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.9
 
-# === LLM Provider — Anthropic Claude ===
+# === Auth ===
+bcrypt>=4.0.0
+
+# === LLM — Anthropic Claude ===
 langchain-anthropic>=0.3.0
+langchain-core>=0.3.0
 
-# === Databases ===
-neo4j>=5.0.0
-qdrant-client>=1.12.0
-
-# === PDF Processing ===
-pypdf>=4.0.0
+# === PDF Extraction ===
+docling>=2.0.0
 
 # === Data Validation ===
 pydantic>=2.0.0
 
-# === SINKT Dependencies ===
-torch>=2.0.0
-torch-geometric>=2.0.0
-sentence-transformers>=3.0.0
-transformers>=4.0.0
-scikit-learn>=1.0.0
-scipy>=1.0.0
-
 # === Utilities ===
 python-dotenv>=1.0.0
 rich>=13.0.0
-numpy>=1.24.0

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html><head>
+<title>APEX Code Architecture</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#1a1a2e; color:#eee; font-family:'Segoe UI',sans-serif; }
+h1 { text-align:center; padding:20px; color:#FFEAA7; font-size:24px; }
+.container { display:flex; flex-wrap:wrap; justify-content:center; gap:16px; padding:20px; }
+.module { border-radius:12px; padding:16px; width:280px; backdrop-filter:blur(10px);
+           border:1px solid rgba(255,255,255,0.1); transition:transform 0.2s; }
+.module:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+.module h3 { font-size:16px; margin-bottom:8px; }
+.module .lines { font-size:11px; opacity:0.6; }
+.module .classes { font-size:12px; color:#4ECDC4; margin:4px 0; }
+.module .methods { font-size:11px; opacity:0.7; }
+.module .deps { font-size:11px; margin-top:8px; color:#FF6B6B; }
+.legend { display:flex; justify-content:center; gap:20px; padding:10px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:12px; }
+.legend-dot { width:12px; height:12px; border-radius:50%; }
+.flow { text-align:center; padding:20px; font-size:14px; color:#aaa; }
+.flow span { color:#FFEAA7; }
+</style></head><body>
+<h1>🏗️ APEX Curriculum Intelligence — Code Architecture</h1>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Layer 1: PDF Extraction</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Layer 2: AI Enrichment</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#45B7D1"></div>Layer 3: Knowledge Graph</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#96CEB4"></div>Layer 4: Vector Search</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFEAA7"></div>Layer 5: RAG Engine</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#DDA0DD"></div>Diagnostic</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#95a5a6"></div>Core/Config</div>
+</div>
+
+<div class="flow">
+  <span>PDF</span> → pdf_analyzer → <span>structured_raw.json</span> → ai_enricher → <span>curriculum.json</span> → graph_builder + qdrant_store → <span>rag_engine</span> → 🎓 Student
+</div>
+
+<div class="container">
+
+  <div class="module" style="background:#4ECDC422; border-color:#4ECDC455;">
+    <h3 style="color:#4ECDC4">ai_enricher.py</h3>
+    <div class="lines">533 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• enrich()<br>• enrich_from_markdown()</div>
+    <div class="deps">Deps: langchain_core, langchain_anthropic, rich, time</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">chapter_transition.py</h3>
+    <div class="lines">132 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• check_section_completion()<br>• detect_gate_passage()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">coach_analyzer.py</h3>
+    <div class="lines">152 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• analyze_student_behavior()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">config.py</h3>
+    <div class="lines">53 lines</div>
+    <div class="classes">Classes: Settings</div>
+    <div class="methods"></div>
+    <div class="deps">Deps: dotenv</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">content_renderer.py</h3>
+    <div class="lines">271 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• render_explanation()<br>• render_solution()<br>• render_concept_card()</div>
+    <div class="deps">Deps: typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">denoising_engine.py</h3>
+    <div class="lines">94 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• compute_weighted_correct()<br>• classify_confidence_answer()</div>
+    <div class="deps">Deps: typing</div>
+  </div>
+  <div class="module" style="background:#DDA0DD22; border-color:#DDA0DD55;">
+    <h3 style="color:#DDA0DD">diagnostic_selector.py</h3>
+    <div class="lines">505 lines</div>
+    <div class="classes">Classes: DiagnosticSelector, DiagnosticProcessor</div>
+    <div class="methods">• dfs()<br>• score()<br>• select_diagnostic_questions()<br>• display_diagnostic_plan()<br>• process_diagnostic()<br>• save_student_state()</div>
+    <div class="deps">Deps: rich, random, datetime, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">docling_extractor.py</h3>
+    <div class="lines">161 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• extract_markdown()</div>
+    <div class="deps">Deps: rich, warnings, logging, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">embeddings.py</h3>
+    <div class="lines">196 lines</div>
+    <div class="classes">Classes: VoyageEmbeddings</div>
+    <div class="methods">• curriculum_to_documents()<br>• create_vector_store()<br>• load_existing_vector_store()<br>• search_similar_concepts()</div>
+    <div class="deps">Deps: rich, langchain_anthropic, langchain_neo4j, langchain</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">encoding_fix.py</h3>
+    <div class="lines">40 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• fix_encoding()</div>
+    <div class="deps">Deps: io, sys</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">graph_adapter.py</h3>
+    <div class="lines">232 lines</div>
+    <div class="classes">Classes: UnifiedGraphAdapter</div>
+    <div class="methods">• mode()<br>• get_concept()<br>• get_prerequisites()<br>• get_related()<br>• get_summary()<br>• interpolate_mastery()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#45B7D122; border-color:#45B7D155;">
+    <h3 style="color:#45B7D1">graph_builder.py</h3>
+    <div class="lines">299 lines</div>
+    <div class="classes">Classes: KnowledgeGraphBuilder</div>
+    <div class="methods">• close()<br>• clear_database()<br>• create_constraints()<br>• build_full_graph()<br>• get_stats()<br>• get_concept_with_context()</div>
+    <div class="deps">Deps: rich, neo4j</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">graph_engine.py</h3>
+    <div class="lines">226 lines</div>
+    <div class="classes">Classes: SQLiteGraphEngine</div>
+    <div class="methods">• get_concept_with_context()<br>• get_prerequisite_chain()<br>• find_related_concepts()<br>• get_graph_summary()<br>• interpolate_mastery()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">mastery_tracker.py</h3>
+    <div class="lines">124 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• bkt_update()<br>• check_mastery_gate()<br>• get_mastery_level()<br>• compute_next_question_score()</div>
+    <div class="deps">Deps: typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">mcp_agent.py</h3>
+    <div class="lines">241 lines</div>
+    <div class="classes">Classes: MCPAgent</div>
+    <div class="methods">• execute_tool()<br>• get_tools_schema()<br>• build_system_prompt()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">mindset_analyzer.py</h3>
+    <div class="lines">124 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• analyze_mindset_gap()</div>
+    <div class="deps">Deps: typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">models.py</h3>
+    <div class="lines">259 lines</div>
+    <div class="classes">Classes: Question, Concept, Section, Chapter, Curriculum, MasteryLevel, BKTParams, MasterySnapshot, MindsetClass, MindsetResult, DiagnosticResponse, StudentState</div>
+    <div class="methods">• total_concepts()<br>• total_questions()<br>• total_sample_questions()<br>• get_all_concepts()<br>• get_concept_by_id()<br>• get_core_concepts()</div>
+    <div class="deps">Deps: datetime, enum, pydantic</div>
+  </div>
+  <div class="module" style="background:#FF6B6B22; border-color:#FF6B6B55;">
+    <h3 style="color:#FF6B6B">pdf_analyzer.py</h3>
+    <div class="lines">504 lines</div>
+    <div class="classes">Classes: PDFAnalyzer</div>
+    <div class="methods">• close()<br>• extract_all_pages()<br>• detect_sections()<br>• detect_exercises()<br>• detect_concepts()<br>• extract_images()</div>
+    <div class="deps">Deps: rich, fitz</div>
+  </div>
+  <div class="module" style="background:#FF6B6B22; border-color:#FF6B6B55;">
+    <h3 style="color:#FF6B6B">pdf_reader.py</h3>
+    <div class="lines">232 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• read_pdf()<br>• split_into_chunks()<br>• extract_images()<br>• read_and_split()</div>
+    <div class="deps">Deps: langchain_core, langchain_text_splitters, rich</div>
+  </div>
+  <div class="module" style="background:#96CEB422; border-color:#96CEB455;">
+    <h3 style="color:#96CEB4">qdrant_store.py</h3>
+    <div class="lines">356 lines</div>
+    <div class="classes">Classes: BM25SparseEncoder, CurriculumVectorStore</div>
+    <div class="methods">• fit()<br>• encode()<br>• create_collection()<br>• index_curriculum()<br>• hybrid_search()<br>• search()</div>
+    <div class="deps">Deps: rich, collections, qdrant_client, sentence_transformers</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">question_generator.py</h3>
+    <div class="lines">242 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• generate_mcq_for_concept()<br>• classify_bloom_level()</div>
+    <div class="deps">Deps: hashlib, typing</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">question_selector.py</h3>
+    <div class="lines">179 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• select_next_questions()<br>• get_learning_path()</div>
+    <div class="deps">Deps: sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#FFEAA722; border-color:#FFEAA755;">
+    <h3 style="color:#FFEAA7">rag_engine.py</h3>
+    <div class="lines">192 lines</div>
+    <div class="classes">Classes: RAGEngine</div>
+    <div class="methods">• ask()<br>• interactive_mode()</div>
+    <div class="deps">Deps: langchain_core, rich</div>
+  </div>
+  <div class="module" style="background:#95a5a622; border-color:#95a5a655;">
+    <h3 style="color:#95a5a6">sinkt_embeddings.py</h3>
+    <div class="lines">338 lines</div>
+    <div class="classes">Classes: SINKTEmbeddingEngine</div>
+    <div class="methods">• index_curriculum()<br>• find_similar()<br>• get_concept_similarity()<br>• interpolate_mastery_semantic()</div>
+    <div class="deps">Deps: hashlib, sqlite3, typing</div>
+  </div>
+  <div class="module" style="background:#bdc3c722; border-color:#bdc3c755;">
+    <h3 style="color:#bdc3c7">structure_extractor.py</h3>
+    <div class="lines">559 lines</div>
+    <div class="classes">Classes: —</div>
+    <div class="methods">• extract_structure_from_chunks()<br>• save_curriculum_json()</div>
+    <div class="deps">Deps: langchain_core, langchain_anthropic, rich, time</div>
+  </div>
+</div>
+</body></html>
