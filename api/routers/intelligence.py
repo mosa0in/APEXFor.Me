@@ -5,11 +5,11 @@ Endpoints: learning-path, next-questions, section-progress, student-analysis, re
 
 import json
 import sqlite3
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime
 
-from api.utils import get_db, DB_PATH
+from api.utils import get_db, DB_PATH, get_current_student
 from src.question_selector import select_next_questions, get_learning_path
 from src.chapter_transition import check_section_completion
 from src.coach_analyzer import analyze_student_behavior
@@ -21,37 +21,47 @@ router = APIRouter(tags=["Intelligence"])
 
 
 @router.get("/api/learning-path/{student_id}/{curriculum_slug}")
-def api_learning_path(student_id: str, curriculum_slug: str):
+def api_learning_path(student_id: str, curriculum_slug: str, current_student: str = Depends(get_current_student)):
     """Get the full adaptive learning path for a student."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         return get_learning_path(conn, student_id, curriculum_slug)
 
 
 @router.get("/api/next-questions/{student_id}/{curriculum_slug}")
-def api_next_questions(student_id: str, curriculum_slug: str, count: int = 3):
+def api_next_questions(student_id: str, curriculum_slug: str, count: int = 3, current_student: str = Depends(get_current_student)):
     """Get the next best questions for adaptive learning."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         questions = select_next_questions(conn, student_id, curriculum_slug, count=count)
     return {"next_questions": questions}
 
 
 @router.get("/api/section-progress/{student_id}/{curriculum_slug}")
-def api_section_progress(student_id: str, curriculum_slug: str):
+def api_section_progress(student_id: str, curriculum_slug: str, current_student: str = Depends(get_current_student)):
     """Check section completion status and gate passages."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         return check_section_completion(conn, student_id, curriculum_slug)
 
 
 @router.get("/api/student-analysis/{student_id}")
-def api_student_analysis(student_id: str):
+def api_student_analysis(student_id: str, current_student: str = Depends(get_current_student)):
     """Get full behavioral analysis + coaching recommendations."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         return analyze_student_behavior(conn, student_id)
 
 
 @router.get("/api/results/{student_id}")
-def api_results(student_id: str, slug: str = ""):
+def api_results(student_id: str, slug: str = "", current_student: str = Depends(get_current_student)):
     """Get diagnostic results, optionally filtered by curriculum slug."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         curriculum_concept_ids = set()
         if slug:

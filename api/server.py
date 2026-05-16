@@ -5,6 +5,10 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# Ensure CWD is project root so load_dotenv() finds .env regardless of how the server was started
+if os.getcwd() != PROJECT_ROOT:
+    os.chdir(PROJECT_ROOT)
+
 """
 APEX Backend API — v4.1 (Router Architecture)
 FastAPI server with modular routers. All business logic lives in api/routers/*.
@@ -21,6 +25,9 @@ from api.utils import get_db, DB_PATH, UPLOAD_DIR
 from api.routers import auth, students, interactions, mastery
 from api.routers import curriculum_content, curricula, section_questions
 from api.routers import sessions, intelligence, graph, sinkt, mcp
+from api.routers import whisper
+from api.routers import diagnostic
+from api.routers import learn
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -137,6 +144,7 @@ def init_db():
             is_core INTEGER DEFAULT 1,
             exercise_count INTEGER DEFAULT 0,
             prerequisites TEXT DEFAULT '[]',
+            external_prerequisites TEXT DEFAULT '[]',
             FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
         );
 
@@ -148,7 +156,32 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_curriculum_concept ON curriculum(concept_id);
         CREATE INDEX IF NOT EXISTS idx_concepts_curriculum ON concepts(curriculum_id);
         CREATE INDEX IF NOT EXISTS idx_curricula_slug ON curricula(slug);
+
+        -- ═══ Auth Tokens ═══
+        CREATE TABLE IF NOT EXISTS auth_tokens (
+            token      TEXT PRIMARY KEY,
+            student_id TEXT NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_auth_tokens_student ON auth_tokens(student_id);
         """)
+        conn.commit()
+
+
+def _run_migrations():
+    """Apply additive column migrations so old DBs stay compatible."""
+    migrations = [
+        ("concepts", "external_prerequisites", "TEXT DEFAULT '[]'"),
+        ("interactions", "response_time_ms", "INTEGER DEFAULT 0"),
+        ("interactions", "break_duration_ms", "INTEGER DEFAULT 0"),
+    ]
+    with get_db() as conn:
+        for table, col, col_def in migrations:
+            existing = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+            if col not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+                print(f"[Migration] Added {table}.{col}")
         conn.commit()
 
 
@@ -164,6 +197,74 @@ def _fix_empty_ready_curricula():
         conn.commit()
     if fixed > 0:
         print(f"[Startup] Fixed {fixed} empty curricula marked as 'ready' → 'error'")
+
+
+def _trigger_missing_ai_questions():
+    """Background: run generate_all for ready curricula that have no AI diagnostic questions yet."""
+    import threading, sqlite3
+    from api.utils import DB_PATH as _db
+
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT c.id, c.slug, c.book_title, c.curriculum_json
+            FROM curricula c
+            WHERE c.status = 'ready' AND c.total_concepts > 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM diagnostic_questions_ai dq WHERE dq.curriculum_id = c.id
+              )
+        """).fetchall()
+
+    if not rows:
+        return
+
+    print(f"[Startup] {len(rows)} curriculum(a) missing AI questions — queuing generation")
+
+    def _run_one(cid, title, cur_json_str):
+        try:
+            import json as _json
+            data = _json.loads(cur_json_str or "{}")
+            concepts = [
+                {
+                    "concept_id": con.get("id", ""),
+                    "name": con.get("name", ""),
+                    "description": con.get("description", ""),
+                    "section_title": sec.get("title", ""),
+                    "difficulty_level": con.get("difficulty_level", 0.5),
+                    "is_core": con.get("is_core", True),
+                }
+                for ch in data.get("chapters", [])
+                for sec in ch.get("sections", [])
+                for con in sec.get("concepts", [])
+            ]
+            if not concepts:
+                return
+            from src.external_concept_generator import generate_all
+            generate_all(curriculum_id=cid, book_title=title, concepts=concepts, db_path=_db)
+            print(f"[Startup] AI questions generated for curriculum #{cid}")
+        except Exception as e:
+            print(f"[Startup] WARNING: AI question gen failed for #{cid}: {e}")
+
+    for row in rows:
+        threading.Thread(
+            target=_run_one,
+            args=(row["id"], row["book_title"], row["curriculum_json"]),
+            daemon=True,
+        ).start()
+
+
+def _fix_stuck_curricula():
+    """Mark any curriculum stuck in processing for >20 minutes as 'error'."""
+    with get_db() as conn:
+        fixed = conn.execute("""
+            UPDATE curricula SET status='error',
+                error_message='Pipeline timed out (stuck >20 min in processing) — please re-upload',
+                updated_at=datetime('now')
+            WHERE status IN ('processing','extracting_pdf','enriching','storing','analyzing_pdf')
+              AND updated_at < datetime('now', '-8 minutes')
+        """).rowcount
+        conn.commit()
+    if fixed > 0:
+        print(f"[Startup] Cleared {fixed} stuck curriculum pipeline(s) → 'error'")
 
 
 def _backfill_curriculum_qa():
@@ -223,12 +324,19 @@ def _backfill_curriculum_qa():
 async def lifespan(app: FastAPI):
     # Startup
     init_db()
+    _run_migrations()
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     print(f"[OK] APEX DB initialized at {DB_PATH}")
+    from src.config import settings as _s
+    _key_ok = bool(_s.ANTHROPIC_API_KEY)
+    _model = _s.LLM_MODEL
+    print(f"[OK] AI Config: key={'SET' if _key_ok else 'MISSING'}  model={_model}")
     from api.pipeline import seed_existing_curriculum
     seed_existing_curriculum(DB_PATH)
+    _fix_stuck_curricula()
     _fix_empty_ready_curricula()
     _backfill_curriculum_qa()
+    _trigger_missing_ai_questions()
     yield
     # Shutdown (if needed)
 
@@ -241,7 +349,12 @@ app = FastAPI(title="APEX Diagnostic API", version="4.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://apexfor.me",
+        "http://apexfor.me",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -263,3 +376,6 @@ app.include_router(intelligence.router)
 app.include_router(graph.router)
 app.include_router(sinkt.router)
 app.include_router(mcp.router)
+app.include_router(whisper.router)
+app.include_router(diagnostic.router)
+app.include_router(learn.router)

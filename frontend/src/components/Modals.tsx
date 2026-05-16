@@ -33,7 +33,7 @@ export function SessionEndSummary({ onEnd }: { onEnd: () => void }) {
   return (
     <div className="min-h-full flex items-start justify-center py-8 overflow-y-auto page-transition">
       <div className="glass-card rounded-2xl p-6 md:p-10 w-full max-w-4xl text-center">
-        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-5 mx-auto border border-primary/20 shadow-[0_0_40px_rgba(111,209,215,0.15)]">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-5 mx-auto border border-primary/20 shadow-[0_0_40px_rgba(208,188,255,0.15)]">
           <CheckCircle className="w-10 h-10 text-primary fill-primary/20" />
         </div>
         <h1 className="text-2xl font-bold text-primary mb-2">تم حفظ الجلسة بنجاح</h1>
@@ -43,7 +43,7 @@ export function SessionEndSummary({ onEnd }: { onEnd: () => void }) {
         <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
           {/* Donut */}
           <div className="relative shrink-0">
-            <div className="donut-chart w-36 h-36" style={{ '--donut-percent': summary.accuracy, '--donut-color': summary.accuracy >= 70 ? '#5af6d6' : summary.accuracy >= 40 ? '#95cdf3' : '#ffb4ab' } as React.CSSProperties}>
+            <div className="donut-chart w-36 h-36" style={{ '--donut-percent': summary.accuracy, '--donut-color': summary.accuracy >= 70 ? '#d0bcff' : summary.accuracy >= 40 ? '#adc6ff' : '#ffb4ab' } as React.CSSProperties}>
               <div className="absolute inset-3 bg-surface-container-lowest rounded-full flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-primary">{summary.accuracy}%</span>
                 <span className="text-xs text-on-surface-variant">الدقة</span>

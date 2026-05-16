@@ -35,12 +35,24 @@ class Question(BaseModel):
         return v if v is not None else []
 
 
+class ExternalPrerequisite(BaseModel):
+    """A prerequisite concept from outside the current curriculum (CON_EXT node)."""
+    id: str = Field(description="External concept identifier, e.g. CON_EXT_ALGEBRA_01")
+    name: str = Field(description="Concept name, e.g. 'Quadratic Equations'")
+    subject: str = Field(default="", description="Subject area, e.g. 'Algebra', 'Trigonometry'")
+    book: str = Field(default="", description="Source textbook if known")
+
+
 class Concept(BaseModel):
     """A teachable concept or topic within a section."""
     id: str = Field(description="Unique concept identifier, e.g. con1_1_1")
     name: str = Field(description="Concept name, e.g. 'Limits of Functions'")
     description: str = Field(description="Detailed explanation of the concept")
-    prerequisites: list[str] = Field(default_factory=list, description="IDs of prerequisite concepts")
+    prerequisites: list[str] = Field(default_factory=list, description="IDs of prerequisite concepts (within curriculum)")
+    external_prerequisites: list[ExternalPrerequisite] = Field(
+        default_factory=list,
+        description="CON_EXT nodes: prerequisite concepts from outside this curriculum"
+    )
     key_formulas: list[str] = Field(default_factory=list, description="Important formulas")
     questions: list[Question] = Field(default_factory=list, description="Sample/diagnostic questions")
     is_core: bool = Field(default=True, description="Is this a core/main concept for diagnostics?")

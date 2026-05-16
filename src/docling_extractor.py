@@ -26,10 +26,10 @@ def extract_markdown(pdf_path: str) -> str:
     """
     Extract clean Markdown from a PDF file using Docling.
 
-    This is the core extraction function that replaces:
-      - pdf_reader.py (PyMuPDF raw text)
-      - pdf_analyzer.py (500+ lines of fragile parsing)
-      - structure_extractor.py (559 lines of regex)
+    Strategy (two-pass):
+      Pass 1 — no OCR (fast, for digital PDFs)
+      Pass 2 — OCR enabled (for scanned/image-only PDFs)
+      Fallback — PyMuPDF direct text extraction
 
     Args:
         pdf_path: Absolute path to the PDF file.
@@ -39,12 +39,12 @@ def extract_markdown(pdf_path: str) -> str:
 
     Raises:
         FileNotFoundError: If PDF doesn't exist.
-        RuntimeError: If Docling fails to process.
+        RuntimeError: If all extraction passes fail.
     """
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-    console.print(f"[bold cyan]📄 Docling: Extracting from[/] {os.path.basename(pdf_path)}")
+    console.print(f"[bold cyan]Docling: Extracting from[/] {os.path.basename(pdf_path)}")
 
     try:
         from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -56,57 +56,97 @@ def extract_markdown(pdf_path: str) -> str:
             "Docling not installed. Run: pip install docling>=2.0.0"
         ) from e
 
-    # ── Configure pipeline ────────────────────────────────────────
-    pipeline_options = PdfPipelineOptions()
-
-    # Disable OCR (not needed for digital textbooks)
-    if hasattr(pipeline_options, "do_ocr"):
-        pipeline_options.do_ocr = False
-
-    # Enable table structure detection
-    if hasattr(pipeline_options, "do_table_structure"):
-        pipeline_options.do_table_structure = True
-
-    # GPU acceleration (auto-detect)
     use_gpu = _check_gpu()
-    if hasattr(pipeline_options, "accelerator_device"):
-        pipeline_options.accelerator_device = "cuda" if use_gpu else "cpu"
-
-    # ── Create converter ──────────────────────────────────────────
-    pdf_format_option = PdfFormatOption(
-        pipeline_options=pipeline_options,
-        backend=PyPdfiumDocumentBackend,
-    )
-
-    converter = DocumentConverter(
-        format_options={InputFormat.PDF: pdf_format_option},
-    )
-
     accel = "GPU" if use_gpu else "CPU"
-    console.print(f"[dim]   Acceleration: {accel}[/]")
 
-    # ── Convert PDF → Markdown ────────────────────────────────────
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, module="pdfminer")
-        warnings.filterwarnings("ignore", message=".*Cannot set gray.*")
-        warnings.filterwarnings("ignore", message=".*invalid float.*")
+    def _run_docling(enable_ocr: bool) -> str:
+        pipeline_options = PdfPipelineOptions()
+        if hasattr(pipeline_options, "do_ocr"):
+            pipeline_options.do_ocr = enable_ocr
+        if hasattr(pipeline_options, "do_table_structure"):
+            pipeline_options.do_table_structure = True
+        if hasattr(pipeline_options, "accelerator_device"):
+            pipeline_options.accelerator_device = "cuda" if use_gpu else "cpu"
 
-        try:
-            result = converter.convert(pdf_path)
-        except Exception as e:
-            raise RuntimeError(f"Docling conversion failed: {e}") from e
-
-    # ── Extract Markdown content ──────────────────────────────────
-    content = _extract_content(result)
-
-    if not content or len(content.strip()) < 100:
-        raise RuntimeError(
-            f"Docling extracted too little content ({len(content or '')} chars). "
-            "PDF may be scanned/image-only."
+        pdf_format_option = PdfFormatOption(
+            pipeline_options=pipeline_options,
+            backend=PyPdfiumDocumentBackend,
         )
+        converter = DocumentConverter(
+            format_options={InputFormat.PDF: pdf_format_option},
+        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning, module="pdfminer")
+            warnings.filterwarnings("ignore", message=".*Cannot set gray.*")
+            warnings.filterwarnings("ignore", message=".*invalid float.*")
+            result = converter.convert(pdf_path)
+        return _extract_content(result)
 
-    console.print(f"[green]✅ Extracted {len(content):,} characters of Markdown[/]")
-    return content
+    # ── Pass 1: no OCR (fast path for digital PDFs) ───────────────
+    console.print(f"[dim]   Pass 1: digital extraction ({accel}, no OCR)...[/]")
+    try:
+        content = _run_docling(enable_ocr=False)
+    except Exception as e:
+        console.print(f"[yellow]   Pass 1 failed: {str(e)[:80]}[/]")
+        content = ""
+
+    if content and len(content.strip()) >= 200:
+        console.print(f"[green]Extracted {len(content):,} chars (digital)[/]")
+        return content
+
+    # ── Pass 2: OCR enabled (scanned/image PDFs) ─────────────────
+    console.print(f"[yellow]   Pass 1 got {len(content.strip())} chars — retrying with OCR...[/]")
+    try:
+        content_ocr = _run_docling(enable_ocr=True)
+        if content_ocr and len(content_ocr.strip()) >= 200:
+            console.print(f"[green]Extracted {len(content_ocr):,} chars (OCR)[/]")
+            return content_ocr
+        # OCR got something but short — prefer it over nothing
+        if content_ocr and len(content_ocr.strip()) > len(content.strip()):
+            content = content_ocr
+    except Exception as e:
+        console.print(f"[yellow]   OCR pass failed: {str(e)[:80]}[/]")
+
+    # ── Pass 3: PyMuPDF fallback (no Docling dependency) ─────────
+    console.print("[yellow]   Trying PyMuPDF fallback...[/]")
+    pymupdf_content = _extract_with_pymupdf(pdf_path)
+    if pymupdf_content and len(pymupdf_content.strip()) >= 200:
+        console.print(f"[green]Extracted {len(pymupdf_content):,} chars (PyMuPDF)[/]")
+        return pymupdf_content
+
+    # ── Give up — but return whatever we have rather than crashing ─
+    best = max([content, pymupdf_content or ""], key=lambda s: len(s.strip()))
+    if best and len(best.strip()) >= 50:
+        console.print(f"[yellow]WARNING: Low-quality extraction ({len(best.strip())} chars) — proceeding[/]")
+        return best
+
+    raise RuntimeError(
+        f"All extraction methods failed for '{os.path.basename(pdf_path)}'. "
+        f"Best result: {len(best.strip())} chars. "
+        "PDF may be heavily protected or corrupted."
+    )
+
+
+def _extract_with_pymupdf(pdf_path: str) -> str:
+    """PyMuPDF (fitz) text extraction — last-resort fallback for scanned PDFs."""
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        console.print("[dim]   PyMuPDF (fitz) not installed — skipping fallback[/]")
+        return ""
+
+    try:
+        doc = fitz.open(pdf_path)
+        pages_text: list[str] = []
+        for i, page in enumerate(doc):
+            text = page.get_text("text")
+            if text and text.strip():
+                pages_text.append(f"## Page {i + 1}\n\n{text.strip()}")
+        doc.close()
+        return "\n\n".join(pages_text)
+    except Exception as e:
+        console.print(f"[dim]   PyMuPDF failed: {str(e)[:60]}[/]")
+        return ""
 
 
 def _extract_content(result: Any) -> str:

@@ -1,0 +1,92 @@
+{
+  "book_title": "Unknown",
+  "total_pages": 4,
+  "total_questions": 0,
+  "sections": [],
+  "exercise_blocks": [],
+  "concepts_by_section": [],
+  "images": [
+    {
+      "page": 1,
+      "filename": "p1_img1.jpeg",
+      "width": 66,
+      "height": 182
+    },
+    {
+      "page": 1,
+      "filename": "p1_img2.jpeg",
+      "width": 460,
+      "height": 96
+    },
+    {
+      "page": 2,
+      "filename": "p2_img1.jpeg",
+      "width": 66,
+      "height": 182
+    },
+    {
+      "page": 2,
+      "filename": "p2_img2.jpeg",
+      "width": 460,
+      "height": 96
+    },
+    {
+      "page": 3,
+      "filename": "p3_img1.jpeg",
+      "width": 66,
+      "height": 182
+    },
+    {
+      "page": 3,
+      "filename": "p3_img2.jpeg",
+      "width": 460,
+      "height": 96
+    },
+    {
+      "page": 4,
+      "filename": "p4_img1.jpeg",
+      "width": 66,
+      "height": 182
+    },
+    {
+      "page": 4,
+      "filename": "p4_img2.jpeg",
+      "width": 460,
+      "height": 96
+    }
+  ],
+  "page_images": [
+    {
+      "page": 1,
+      "filename": "page1.png",
+      "section_id": "",
+      "vector_paths": 212,
+      "width": 1650,
+      "height": 1275
+    },
+    {
+      "page": 2,
+      "filename": "page2.png",
+      "section_id": "",
+      "vector_paths": 260,
+      "width": 1650,
+      "height": 1275
+    },
+    {
+      "page": 3,
+      "filename": "page3.png",
+      "section_id": "",
+      "vector_paths": 147,
+      "width": 1650,
+      "height": 1275
+    },
+    {
+      "page": 4,
+      "filename": "page4.png",
+      "section_id": "",
+      "vector_paths": 111,
+      "width": 1650,
+      "height": 1275
+    }
+  ]
+}

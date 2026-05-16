@@ -5,8 +5,8 @@ Endpoints: index, search, similarity, interpolate
 
 import json
 import sqlite3
-from fastapi import APIRouter, HTTPException
-from api.utils import DB_PATH
+from fastapi import APIRouter, HTTPException, Depends
+from api.utils import DB_PATH, get_current_student
 from src.sinkt_embeddings import SINKTEmbeddingEngine
 
 router = APIRouter(prefix="/api/sinkt", tags=["SINKT Semantic"])
@@ -48,7 +48,9 @@ def api_sinkt_similarity(concept_a: str, concept_b: str):
 
 
 @router.get("/interpolate/{student_id}/{concept_id}")
-def api_sinkt_interpolate(student_id: str, concept_id: str):
+def api_sinkt_interpolate(student_id: str, concept_id: str, current_student: str = Depends(get_current_student)):
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     snaps = conn.execute(

@@ -42,7 +42,7 @@ function Swatch({ color, active, onClick }: { color: string; active: boolean; on
     <button
       onClick={onClick}
       className="relative w-8 h-8 rounded-full transition-all hover:scale-110"
-      style={{ background: color, border: active ? '3px solid white' : '2px solid transparent', boxShadow: active ? '0 0 0 2px rgba(111,209,215,0.8)' : 'none' }}
+      style={{ background: color, border: active ? '3px solid white' : '2px solid transparent', boxShadow: active ? '0 0 0 2px rgba(208,188,255,0.8)' : 'none' }}
     >
       {active && (
         <div className="absolute inset-0 flex items-center justify-center">

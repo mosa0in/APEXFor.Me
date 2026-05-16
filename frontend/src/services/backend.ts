@@ -8,6 +8,11 @@
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
+export function getAuthHeader(): Record<string, string> {
+  const token = localStorage.getItem('apex_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // ═══════════════════════════════════════════
 // Types matching L1 output (curriculum.json)
 // ═══════════════════════════════════════════
@@ -107,7 +112,7 @@ export async function fetchCurriculum(slug?: string): Promise<L1Curriculum | nul
   // Try API first (multi-curriculum)
   if (activeSlug) {
     try {
-      const res = await fetch(`${API}/api/curricula/${activeSlug}`);
+      const res = await fetch(`${API}/api/curricula/${activeSlug}`, { headers: getAuthHeader() });
       if (res.ok) {
         const data = await res.json();
         const curriculum = data.curriculum_json as L1Curriculum;
@@ -122,17 +127,7 @@ export async function fetchCurriculum(slug?: string): Promise<L1Curriculum | nul
     }
   }
 
-  // Fallback: static file
-  try {
-    const res = await fetch('/data/curriculum.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    console.log('[L1] Curriculum loaded from static file');
-    return data;
-  } catch (e) {
-    console.warn('[L1] curriculum.json not available:', e);
-    return null;
-  }
+  return null;
 }
 
 export async function fetchDiagnosticQuestions(): Promise<DiagnosticQuestion[]> {
@@ -177,7 +172,7 @@ export async function getCurriculumStats(slug?: string): Promise<CurriculumStats
   // Try API first
   if (activeSlug) {
     try {
-      const res = await fetch(`${API}/api/curricula/${activeSlug}/stats`);
+      const res = await fetch(`${API}/api/curricula/${activeSlug}/stats`, { headers: getAuthHeader() });
       if (res.ok) {
         const data = await res.json();
         console.log('[L1] Stats loaded from API:', activeSlug);
@@ -253,7 +248,7 @@ export async function getAllConcepts(slug?: string): Promise<L1Concept[]> {
   // Try API first
   if (activeSlug) {
     try {
-      const res = await fetch(`${API}/api/curricula/${activeSlug}/concepts`);
+      const res = await fetch(`${API}/api/curricula/${activeSlug}/concepts`, { headers: getAuthHeader() });
       if (res.ok) {
         const data = await res.json();
         console.log('[L1] Concepts loaded from API:', data.length);
@@ -304,7 +299,7 @@ export async function getCoreConcepts(): Promise<L1Concept[]> {
 export async function fetchStudentState(studentId: string): Promise<StudentState | null> {
   // Try API first
   try {
-    const res = await fetch(`/api/students/${studentId}`);
+    const res = await fetch(`/api/students/${studentId}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   // Fallback: localStorage
@@ -316,7 +311,7 @@ export async function saveStudentState(state: StudentState): Promise<void> {
   try {
     await fetch(`/api/students/${state.student_id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(state),
     });
   } catch {}
@@ -396,7 +391,7 @@ export async function login(studentId: string, password: string): Promise<AuthRe
 
 export async function getCurrentStudent(studentId: string): Promise<Record<string, any> | null> {
   try {
-    const res = await fetch(`${API}/api/auth/me/${studentId}`);
+    const res = await fetch(`${API}/api/auth/me/${studentId}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return null;
@@ -433,7 +428,7 @@ export interface InteractionData {
 export async function submitInteraction(data: InteractionData): Promise<{ interaction_id: number }> {
   const res = await fetch(`${API}/api/interactions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(data),
   });
   const result = await res.json();
@@ -446,7 +441,7 @@ export async function getInteractions(studentId: string, sessionId?: string): Pr
     ? `${API}/api/interactions/${studentId}?session_id=${sessionId}`
     : `${API}/api/interactions/${studentId}`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return [];
@@ -469,7 +464,7 @@ export interface MasterySnapshotData {
 export async function getMasterySnapshots(studentId: string, slug?: string): Promise<MasterySnapshotData[]> {
   try {
     const slugParam = slug ? `?slug=${encodeURIComponent(slug)}` : '';
-    const res = await fetch(`${API}/api/mastery/${studentId}${slugParam}`);
+    const res = await fetch(`${API}/api/mastery/${studentId}${slugParam}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return [];
@@ -482,7 +477,7 @@ export async function updateMastery(
 ): Promise<void> {
   await fetch(`${API}/api/mastery/${studentId}/${conceptId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(data),
   });
 }
@@ -494,7 +489,7 @@ export async function updateMastery(
 
 export async function getLearningPath(studentId: string, slug: string): Promise<any> {
   try {
-    const res = await fetch(`${API}/api/learning-path/${studentId}/${slug}`);
+    const res = await fetch(`${API}/api/learning-path/${studentId}/${slug}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return { path: [], progress: 0, mastered: 0, total: 0, next_concepts: [] };
@@ -502,7 +497,7 @@ export async function getLearningPath(studentId: string, slug: string): Promise<
 
 export async function getNextQuestions(studentId: string, slug: string, count = 3): Promise<any[]> {
   try {
-    const res = await fetch(`${API}/api/next-questions/${studentId}/${slug}?count=${count}`);
+    const res = await fetch(`${API}/api/next-questions/${studentId}/${slug}?count=${count}`, { headers: getAuthHeader() });
     if (res.ok) {
       const data = await res.json();
       return data.next_questions || [];
@@ -513,7 +508,7 @@ export async function getNextQuestions(studentId: string, slug: string, count = 
 
 export async function getSectionProgress(studentId: string, slug: string): Promise<any> {
   try {
-    const res = await fetch(`${API}/api/section-progress/${studentId}/${slug}`);
+    const res = await fetch(`${API}/api/section-progress/${studentId}/${slug}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return { completed_sections: [], active_section: null, next_section: null, overall_progress: 0 };
@@ -521,7 +516,7 @@ export async function getSectionProgress(studentId: string, slug: string): Promi
 
 export async function getStudentAnalysis(studentId: string): Promise<any> {
   try {
-    const res = await fetch(`${API}/api/student-analysis/${studentId}`);
+    const res = await fetch(`${API}/api/student-analysis/${studentId}`, { headers: getAuthHeader() });
     if (res.ok) return await res.json();
   } catch {}
   return { personality_traits: {}, session_stats: {}, recommendations: [] };

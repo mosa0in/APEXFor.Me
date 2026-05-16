@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.progress import track
 
 from src.config import settings
-from src.models import Curriculum, Chapter, Section, Concept, Question
+from src.models import Curriculum, Chapter, Section, Concept, Question, ExternalPrerequisite
 
 console = Console(force_terminal=True)
 
@@ -86,7 +86,8 @@ def _get_llm(max_tokens: int = 4096):
         anthropic_api_key=settings.ANTHROPIC_API_KEY,
         max_tokens=max_tokens,
         temperature=0,
-        timeout=120,  # 2 min max per call — avoids silent hangs
+        timeout=_CALL_TIMEOUT_SECONDS,
+        default_request_timeout=_CALL_TIMEOUT_SECONDS,
     )
 
 
@@ -155,37 +156,64 @@ def _repair_json(text: str) -> str:
     return text
 
 
-def _invoke_with_retry(chain, params, retries=3):
+_CALL_TIMEOUT_SECONDS = 180  # 3 min per attempt — if Claude hangs longer, abort
+
+
+def _invoke_with_retry(chain, params, retries=2):
+    import concurrent.futures
     for attempt in range(retries):
+        timed_out = False
+        call_error = None
+        response = None
+
+        # Use executor WITHOUT 'with' — so shutdown(wait=False) abandons hung threads
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(chain.invoke, params)
         try:
-            response = chain.invoke(params)
-            content = response.content if hasattr(response, 'content') else str(response)
-            cleaned = _clean_json(content)
-            # Try parsing as-is first
-            try:
-                json.loads(cleaned)
-                return cleaned
-            except json.JSONDecodeError:
-                # Try repairing truncated JSON
-                repaired = _repair_json(cleaned)
-                try:
-                    json.loads(repaired)
-                    console.print("[yellow]   ⚠️ JSON was truncated — auto-repaired[/]")
-                    return repaired
-                except json.JSONDecodeError:
-                    if attempt < retries - 1:
-                        console.print(f"[yellow]   ⚠️ JSON repair failed, retrying...")
-                        time.sleep(2 ** attempt * 3)
-                        continue
-                    # Last resort: return repaired anyway, let caller handle
-                    return repaired
+            response = future.result(timeout=_CALL_TIMEOUT_SECONDS)
+        except concurrent.futures.TimeoutError:
+            timed_out = True
         except Exception as e:
+            call_error = e
+        finally:
+            executor.shutdown(wait=False)  # don't block on the hung HTTP thread
+
+        if timed_out:
+            msg = f"AI timed out after {_CALL_TIMEOUT_SECONDS}s (attempt {attempt+1})"
+            console.print(f"[red]⏱ {msg}[/]")
+            if attempt < retries - 1:
+                time.sleep(5)
+                continue
+            raise TimeoutError(msg)
+
+        if call_error is not None:
             if attempt < retries - 1:
                 wait = 2 ** attempt * 5
-                console.print(f"[yellow]⚠️ Retry {attempt+1}: {str(e)[:60]}[/]")
+                console.print(f"[yellow]⚠️ Retry {attempt+1}: {str(call_error)[:80]}[/]")
                 time.sleep(wait)
-            else:
-                raise
+                continue
+            raise call_error
+
+        # Parse response
+        content = response.content if hasattr(response, 'content') else str(response)
+        cleaned = _clean_json(content)
+        try:
+            json.loads(cleaned)
+            return cleaned
+        except json.JSONDecodeError:
+            repaired = _repair_json(cleaned)
+            try:
+                json.loads(repaired)
+                console.print("[yellow]   ⚠️ JSON truncated — auto-repaired[/]")
+                return repaired
+            except json.JSONDecodeError:
+                if attempt < retries - 1:
+                    console.print("[yellow]   ⚠️ JSON repair failed, retrying...[/]")
+                    time.sleep(2 ** attempt * 3)
+                    continue
+                return repaired
+
+    raise RuntimeError("All AI call attempts failed")
 
 
 def enrich(raw_path: str = "data/structured_raw.json",
@@ -359,97 +387,94 @@ def _fallback_concepts(sec_id: str, concept_data: dict) -> list[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# NEW: Markdown-based enrichment (Docling pipeline)
+# NEW: Markdown-based enrichment (Docling pipeline) — direct Anthropic SDK
+# LangChain bypassed here: its timeout wrapper is unreliable.
 # ═══════════════════════════════════════════════════════════════════════════
 
-MARKDOWN_ENRICH_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a curriculum analysis expert. You receive Markdown content extracted from an academic textbook PDF.
+_MD_SYS = """You are a curriculum analysis expert. You receive Markdown content extracted from an academic PDF — this may be a textbook chapter, lecture notes, course slides, or any educational material.
 
-Your job is to analyze the content and extract the FULL curriculum structure.
+Your job is to analyze the content and extract a FULL curriculum structure.
 
 RULES:
-1. Detect the book language (en/ar/mixed) from the content
-2. Extract ALL chapters, sections, concepts, and exercises you find
-3. Group related terms into meaningful concepts (5-10 per section)
-4. Set difficulty_level based on concept complexity (0.0-1.0)
-5. Identify prerequisites between concepts (earlier concepts first)
-6. Pick 2-3 diagnostic questions per concept from exercises
-7. If content is NOT a valid textbook/curriculum, return empty chapters
-8. For each question, set question_type: "mcq" (with options), "true_false" (yes/no), "text_input" (open-ended/calculation). Only provide "options" array for mcq type.
+1. Detect the language (en/ar/mixed) from the content
+2. ALWAYS extract structure — lecture notes, slides, and course handouts are valid curriculum material
+3. Map the content to chapters/sections even if it's lecture notes:
+   - A lecture note = one chapter (CH_01)
+   - Major sections (1.1, 1.2 or numbered headings) = sections (SEC_01_01, SEC_01_02)
+   - Definitions, theorems, or topic clusters = concepts (CON_01_01_01...)
+4. Group related terms/definitions into meaningful concepts (3-8 per section)
+5. Set difficulty_level based on concept complexity (0.0-1.0)
+6. Identify prerequisites between concepts (earlier concepts first)
+7. Extract or generate 1-3 diagnostic questions per concept from examples/exercises in the text
+8. NEVER return empty chapters — always extract something if there is educational content
+9. For each question, set question_type: "mcq" (with options), "true_false" (yes/no), "text_input" (open-ended/calculation)
+10. For external_prerequisites: list concepts from OTHER subjects that students need first. Use id format like CON_EXT_ALGEBRA_01 or CON_EXT_TRIGONOMETRY_01. If none, set to [].
 
-Return ONLY valid JSON — no explanation, no markdown fences."""),
-    ("human", """Analyze this textbook content and extract the curriculum structure.
+Return ONLY valid JSON — no explanation, no markdown fences."""
+
+_MD_HUMAN_PRE = """Analyze this textbook content and extract the curriculum structure.
 
 <MARKDOWN_CONTENT>
-{markdown_chunk}
+"""
+
+_MD_HUMAN_POST = """
 </MARKDOWN_CONTENT>
 
 ID FORMAT RULES (critical — follow exactly):
-- Chapter   : CH_{nn}              e.g. CH_01, CH_02
-- Section   : SEC_{ch}_{nn}        e.g. SEC_01_01, SEC_01_02
-- Concept   : CON_{ch}_{sec}_{nn}  e.g. CON_01_01_01, CON_01_01_02
-- Question  : Q_{ch}_{sec}_{con}_{nnn}  e.g. Q_01_01_01_001
-Each ID encodes its full path — no JOIN needed.
-Prerequisites must reference existing CON_... IDs from the same curriculum.
+- Chapter   : CH_01, CH_02, ...
+- Section   : SEC_01_01, SEC_01_02, SEC_02_01, ...
+- Concept   : CON_01_01_01, CON_01_01_02, CON_01_02_01, ...
+- Question  : Q_01_01_01_001, Q_01_01_01_002, ...
+- External  : CON_EXT_ALGEBRA_01, CON_EXT_TRIGONOMETRY_01, ...
+Each ID encodes its full path. Prerequisites must reference existing CON_ IDs.
 
 Return this exact JSON structure:
-{{
+{
   "book_title": "Title of the textbook",
   "authors": ["Author Name"],
   "language": "en",
   "chapters": [
-    {{
+    {
       "id": "CH_01",
       "number": 1,
       "title": "Chapter Title",
       "summary": "Brief chapter summary",
       "sections": [
-        {{
+        {
           "id": "SEC_01_01",
           "title": "Section 1.1 Title",
           "page_start": 0,
           "total_exercises": 20,
           "concepts": [
-            {{
+            {
               "id": "CON_01_01_01",
               "name": "Concept Name",
               "description": "Clear 1-2 sentence description",
               "prerequisites": [],
+              "external_prerequisites": [],
               "key_formulas": ["formula if any"],
               "is_core": true,
               "difficulty_level": 0.4,
               "exercise_count": 10,
               "exercise_range": "1-10",
               "diagnostic_questions": [
-                {{
+                {
                   "id": "Q_01_01_01_001",
                   "text": "Question text from exercises",
                   "question_type": "mcq",
                   "difficulty": "medium",
                   "correct_answer": "answer if visible",
-                  "options": ["A) ...", "B) ...", "C) ...", "D) ..."]
-                }}
+                  "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                  "answer_hint": "Brief 1-sentence hint about the approach or key insight"
+                }
               ]
-            }},
-            {{
-              "id": "CON_01_01_02",
-              "name": "Second Concept",
-              "description": "Description",
-              "prerequisites": ["CON_01_01_01"],
-              "key_formulas": [],
-              "is_core": true,
-              "difficulty_level": 0.6,
-              "exercise_count": 8,
-              "exercise_range": "11-18",
-              "diagnostic_questions": []
-            }}
+            }
           ]
-        }}
+        }
       ]
-    }}
+    }
   ]
-}}"""),
-])
+}"""
 
 
 def _chunk_markdown(markdown: str, max_chars: int = 40000) -> list[str]:
@@ -488,6 +513,82 @@ def _chunk_markdown(markdown: str, max_chars: int = 40000) -> list[str]:
     return chunks
 
 
+def _build_chapters_from_parsed(parsed: dict, all_chapters: list) -> None:
+    """Parse Claude JSON response and append chapters into all_chapters list."""
+    for ch_data in parsed.get("chapters", []):
+        sections = []
+        for sec_data in ch_data.get("sections", []):
+            concepts = []
+            for con_data in sec_data.get("concepts", []):
+                questions = []
+                for q_data in con_data.get("diagnostic_questions", []):
+                    if isinstance(q_data, dict):
+                        con_id = con_data.get("id", "")
+                        questions.append(Question(
+                            id=q_data.get("id", f"{con_id}_Q_{len(questions)+1:03d}"),
+                            text=q_data.get("text", ""),
+                            difficulty=q_data.get("difficulty", "medium"),
+                            correct_answer=q_data.get("correct_answer", ""),
+                            options=q_data.get("options") or [],
+                            answer_hint=q_data.get("answer_hint", ""),
+                            concept_id=con_data.get("id", ""),
+                            is_diagnostic=True,
+                            bloom_level=q_data.get("bloom_level", 3),
+                        ))
+                    elif isinstance(q_data, (int, str)):
+                        questions.append(Question(
+                            id=f"{con_data.get('id', '')}_q{q_data}",
+                            text=f"Exercise {q_data}",
+                            difficulty="medium",
+                            is_diagnostic=True,
+                        ))
+
+                ext_prereqs = [
+                    ExternalPrerequisite(
+                        id=ep.get("id", ""),
+                        name=ep.get("name", ""),
+                        subject=ep.get("subject", ""),
+                        book=ep.get("book", ""),
+                    )
+                    for ep in con_data.get("external_prerequisites", [])
+                    if isinstance(ep, dict)
+                ]
+                concepts.append(Concept(
+                    id=con_data.get("id", ""),
+                    name=con_data.get("name", ""),
+                    description=con_data.get("description", ""),
+                    prerequisites=con_data.get("prerequisites", []),
+                    external_prerequisites=ext_prereqs,
+                    key_formulas=con_data.get("key_formulas", []),
+                    is_core=con_data.get("is_core", True),
+                    difficulty_level=con_data.get("difficulty_level", 0.5),
+                    questions=questions,
+                    exercise_count=con_data.get("exercise_count", 0),
+                    exercise_range=con_data.get("exercise_range", ""),
+                ))
+
+            sections.append(Section(
+                id=sec_data.get("id", ""),
+                title=sec_data.get("title", ""),
+                page_start=sec_data.get("page_start", 0),
+                concepts=concepts,
+                total_exercises=sec_data.get("total_exercises", 0),
+            ))
+
+        ch_id = ch_data.get("id", f"CH_{len(all_chapters)+1:02d}")
+        existing = next((c for c in all_chapters if c.id == ch_id), None)
+        if existing:
+            existing.sections.extend(sections)
+        else:
+            all_chapters.append(Chapter(
+                id=ch_id,
+                number=ch_data.get("number", len(all_chapters) + 1),
+                title=ch_data.get("title", ""),
+                summary=ch_data.get("summary", ""),
+                sections=sections,
+            ))
+
+
 def enrich_from_markdown(
     markdown: str,
     output_path: str = "data/curriculum.json",
@@ -495,26 +596,22 @@ def enrich_from_markdown(
 ) -> Curriculum:
     """
     Enrich curriculum directly from Markdown content (Docling output).
-
-    This replaces the old enrich() flow that needed structured_raw.json.
-    Now Claude analyzes clean Markdown and extracts everything in one pass.
-
-    Args:
-        markdown: Clean Markdown string from Docling.
-        output_path: Where to save the resulting curriculum JSON.
-
-    Returns:
-        Curriculum model with all chapters, sections, concepts, and questions.
+    Uses direct Anthropic SDK — bypasses LangChain for reliable timeout.
     """
+    import anthropic as _anthropic
+
     console.print(f"\n[bold yellow]{'='*60}[/]")
-    console.print(f"[bold yellow]  APEX AI Enricher — Markdown Mode (Docling)[/]")
+    console.print(f"[bold yellow]  APEX AI Enricher — Markdown Mode[/]")
     console.print(f"[bold yellow]{'='*60}[/]")
     console.print(f"[dim]Markdown size: {len(markdown):,} characters[/]")
 
-    llm = _get_llm(max_tokens=16384)
-    chain = MARKDOWN_ENRICH_PROMPT | llm
+    # Direct SDK — timeout is enforced at the HTTP/socket level, not LangChain wrapper
+    client = _anthropic.Anthropic(
+        api_key=settings.ANTHROPIC_API_KEY,
+        timeout=_CALL_TIMEOUT_SECONDS,
+        max_retries=1,
+    )
 
-    # Split into chunks if too large for context window
     chunks = _chunk_markdown(markdown)
     console.print(f"[dim]Processing {len(chunks)} chunk(s)...[/]")
 
@@ -522,92 +619,62 @@ def enrich_from_markdown(
     book_title = ""
     authors: list[str] = []
     language = "en"
+    chunk_errors: list[str] = []
 
     for i, chunk in enumerate(chunks):
         console.print(f"[cyan]🔄 Processing chunk {i+1}/{len(chunks)} ({len(chunk):,} chars)...[/]")
         if status_callback:
             status_callback(f"enriching ({i+1}/{len(chunks)} chunks)")
 
-        try:
-            raw_response = _invoke_with_retry(chain, {"markdown_chunk": chunk})
-            parsed = json.loads(raw_response)
-        except Exception as e:
-            console.print(f"[red]❌ Chunk {i+1} failed: {str(e)[:80]}[/]")
+        human_content = _MD_HUMAN_PRE + chunk + _MD_HUMAN_POST
+        parsed = None
+        last_err = None
+
+        for attempt in range(2):
+            try:
+                msg = client.messages.create(
+                    model=settings.LLM_MODEL,
+                    max_tokens=16384,
+                    system=_MD_SYS,
+                    messages=[{"role": "user", "content": human_content}],
+                )
+                raw = _clean_json(msg.content[0].text.strip())
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    repaired = _repair_json(raw)
+                    try:
+                        parsed = json.loads(repaired)
+                        console.print("[yellow]   ⚠️ JSON truncated — auto-repaired[/]")
+                    except json.JSONDecodeError:
+                        last_err = "JSON parse failed after repair"
+                        if attempt < 1:
+                            time.sleep(10)
+                        continue
+                break  # success
+            except Exception as e:
+                last_err = str(e)[:120]
+                console.print(f"[red]⚠️ Chunk {i+1} attempt {attempt+1}: {last_err}[/]")
+                if attempt < 1:
+                    time.sleep(10)
+
+        if parsed is None:
+            console.print(f"[red]❌ Chunk {i+1} failed: {last_err}[/]")
+            chunk_errors.append(last_err or "unknown")
             continue
 
-        # Extract metadata from first successful chunk
         if not book_title:
             book_title = parsed.get("book_title", "Unknown Textbook")
             authors = parsed.get("authors", [])
             language = parsed.get("language", "en")
 
-        # Build Chapter/Section/Concept models from parsed JSON
-        for ch_data in parsed.get("chapters", []):
-            sections = []
-            for sec_data in ch_data.get("sections", []):
-                concepts = []
-                for con_data in sec_data.get("concepts", []):
-                    # Build questions from diagnostic_questions
-                    questions = []
-                    for q_data in con_data.get("diagnostic_questions", []):
-                        if isinstance(q_data, dict):
-                            con_id = con_data.get("id", "")
-                            questions.append(Question(
-                                id=q_data.get("id", f"{con_id}_Q_{len(questions)+1:03d}"),
-                                text=q_data.get("text", ""),
-                                difficulty=q_data.get("difficulty", "medium"),
-                                correct_answer=q_data.get("correct_answer", ""),
-                                options=q_data.get("options") or [],
-                                concept_id=con_data.get("id", ""),
-                                is_diagnostic=True,
-                                bloom_level=q_data.get("bloom_level", 3),
-                            ))
-                        elif isinstance(q_data, (int, str)):
-                            questions.append(Question(
-                                id=f"{con_data.get('id', '')}_q{q_data}",
-                                text=f"Exercise {q_data}",
-                                difficulty="medium",
-                                is_diagnostic=True,
-                            ))
+        _build_chapters_from_parsed(parsed, all_chapters)
+        n_concepts = sum(len(s.concepts) for ch in all_chapters for s in ch.sections)
+        console.print(f"   ✅ Chunk {i+1}: total {n_concepts} concepts so far")
 
-                    concepts.append(Concept(
-                        id=con_data.get("id", ""),
-                        name=con_data.get("name", ""),
-                        description=con_data.get("description", ""),
-                        prerequisites=con_data.get("prerequisites", []),
-                        key_formulas=con_data.get("key_formulas", []),
-                        is_core=con_data.get("is_core", True),
-                        difficulty_level=con_data.get("difficulty_level", 0.5),
-                        questions=questions,
-                        exercise_count=con_data.get("exercise_count", 0),
-                        exercise_range=con_data.get("exercise_range", ""),
-                    ))
+    if not all_chapters and chunk_errors:
+        raise RuntimeError(f"All {len(chunk_errors)} chunk(s) failed. First: {chunk_errors[0]}")
 
-                sections.append(Section(
-                    id=sec_data.get("id", ""),
-                    title=sec_data.get("title", ""),
-                    page_start=sec_data.get("page_start", 0),
-                    concepts=concepts,
-                    total_exercises=sec_data.get("total_exercises", 0),
-                ))
-
-            # Merge or add chapter
-            ch_id = ch_data.get("id", f"CH_{len(all_chapters)+1:02d}")
-            existing = next((c for c in all_chapters if c.id == ch_id), None)
-            if existing:
-                existing.sections.extend(sections)
-            else:
-                all_chapters.append(Chapter(
-                    id=ch_id,
-                    number=ch_data.get("number", len(all_chapters) + 1),
-                    title=ch_data.get("title", ""),
-                    summary=ch_data.get("summary", ""),
-                    sections=sections,
-                ))
-
-        console.print(f"   ✅ Chunk {i+1}: {sum(len(s.get('concepts', [])) for ch in parsed.get('chapters', []) for s in ch.get('sections', []))} concepts")
-
-    # ── Build final curriculum ────────────────────────────────────
     curriculum = Curriculum(
         book_title=book_title,
         authors=authors,
@@ -615,18 +682,13 @@ def enrich_from_markdown(
         chapters=all_chapters,
     )
 
-    # Save
     import os
     os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else "data", exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(curriculum.model_dump_json(indent=2))
 
-    console.print(f"\n[green]💾 Saved enriched curriculum to {output_path}[/]")
-    console.print(f"   📕 {curriculum.book_title}")
-    console.print(f"   📚 Chapters: {len(curriculum.chapters)}")
-    console.print(f"   💡 Concepts: {curriculum.total_concepts}")
-    console.print(f"   ❓ Questions: {curriculum.total_questions}")
-
+    console.print(f"\n[green]💾 Saved: {curriculum.book_title} "
+                  f"({curriculum.total_concepts} concepts, {curriculum.total_questions} questions)[/]")
     return curriculum
 
 

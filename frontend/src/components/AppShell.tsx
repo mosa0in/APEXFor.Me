@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Map, CloudUpload, BookOpen, Menu, X, Sparkles, BarChart3 } from 'lucide-react';
 import AvatarBubble from './AvatarBubble';
+import CurriculumSelector from './CurriculumSelector';
+import ProcessingBanner from './ProcessingBanner';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -53,8 +55,11 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
         </div>
 
-        {/* Left: Avatar + Mobile hamburger */}
+        {/* Left: CurriculumSelector + Avatar + Mobile hamburger */}
         <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <CurriculumSelector />
+          </div>
           <div className="hidden md:block">
             <AvatarBubble />
           </div>
@@ -65,13 +70,16 @@ export default function AppShell({ children }: AppShellProps) {
         </div>
       </header>
 
+      {/* ═══ Processing / Upload Status Banner ═══ */}
+      <ProcessingBanner />
+
       {/* ═══ Mobile Nav Overlay ═══ */}
       {mobileOpen && (
         <>
           <div className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 md:hidden" onClick={() => setMobileOpen(false)} />
           <div className="fixed right-0 top-0 h-full w-72 z-50 p-5 flex flex-col gap-2 md:hidden" style={{
-            background: 'linear-gradient(180deg, rgba(0, 21, 37, 0.98) 0%, rgba(0, 15, 29, 0.99) 100%)',
-            borderLeft: '1px solid rgba(140, 237, 243, 0.1)',
+            background: 'linear-gradient(180deg, rgba(22, 17, 38, 0.98) 0%, rgba(14, 12, 20, 0.99) 100%)',
+            borderLeft: '1px solid rgba(208, 188, 255, 0.1)',
             animation: 'slide-in-right 0.3s ease-out',
           }}>
             <div className="flex items-center justify-between mb-4">
@@ -84,6 +92,11 @@ export default function AppShell({ children }: AppShellProps) {
             {/* User info */}
             <div className="mb-3 flex justify-end">
               <AvatarBubble />
+            </div>
+
+            {/* Curriculum selector */}
+            <div className="mb-2 flex justify-end">
+              <CurriculumSelector />
             </div>
 
             {navItems.map(item => (

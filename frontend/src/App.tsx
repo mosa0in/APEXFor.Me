@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { MAX_REPHRASE_PER_QUESTION } from './context/SessionContext';
@@ -12,6 +12,7 @@ import { SessionEndSummary, Modal } from './components/Modals';
 import BrainstormingView from './components/BrainstormingView';
 import CoachPanel from './components/CoachPanel';
 import { aiRephraseQuestion, isAIAvailable } from './services/ai';
+import { getAuthHeader } from './services/backend';
 import { 
   RefreshCcw, SupportAgent, PsychologyAlt, Lightbulb, Check, ArrowRight,
   Flag, SentimentSatisfied, SentimentNeutral, SentimentDissatisfied,
@@ -30,12 +31,14 @@ type AppState = 'start' | 'question' | 'checkpoint' | 'puzzle' | 'strategies' | 
 
 function AppContent() {
   const session = useSession();
-  const { state, questions, questionsLoading, isCheckpoint, isLastQuestion, nextQuestion, setFeedbackLevel, markHintUsed, markCoachUsed, markRephraseUsed, markRestRequested, resetSession, showToast, currentQuestion, setAICoachResponse, setAILoading, startSession, getSessionSummary } = session;
+  const { state, questions, questionsLoading, isCheckpoint, isLastQuestion, nextQuestion, setFeedbackLevel, markHintUsed, markCoachUsed, markRephraseUsed, markRestRequested, startBreak, endBreak, resetSession, showToast, currentQuestion, setAICoachResponse, setAILoading, startSession, getSessionSummary, submitResponse } = session;
   const navigate = useNavigate();
 
   const [appState, setAppState] = useState<AppState>('start');
   const [modalType, setModalType] = useState<'none' | 'regeneration' | 'hint' | 'break' | 'confirm_exit'>('none');
   const [coachPanelOpen, setCoachPanelOpen] = useState(false);
+  const [breakSeconds, setBreakSeconds] = useState(0);
+  const breakIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // GAP-02 + GAP-09: Auto-start session from LoginPage's saved student ID
   useEffect(() => {
@@ -68,30 +71,24 @@ function AppContent() {
 
   const handleRephrase = useCallback(async () => {
     if (!currentQuestion) return;
-    
-    // Check rephrase limit
     if (state.currentRephraseCount >= MAX_REPHRASE_PER_QUESTION) {
       showToast(`⚠️ استهلكت كل محاولات إعادة الصياغة (${MAX_REPHRASE_PER_QUESTION}/${MAX_REPHRASE_PER_QUESTION}). استعن بالكوتش!`, 'error');
       return;
     }
-    
+    const attemptNumber = state.currentRephraseCount + 1;
     setModalType('regeneration');
-    
     try {
-      console.log(`[APEX] Rephrase: starting... (${state.currentRephraseCount + 1}/${MAX_REPHRASE_PER_QUESTION})`);
-      const result = await aiRephraseQuestion(currentQuestion);
-      console.log('[APEX] Rephrase result:', result);
-      
+      const result = await aiRephraseQuestion(currentQuestion, attemptNumber);
       if (result.isAI) {
-        markRephraseUsed(result.text, 'ai_rephrase');
-        showToast(`✨ تم إعادة الصياغة (${state.currentRephraseCount + 1}/${MAX_REPHRASE_PER_QUESTION})`, 'success');
+        markRephraseUsed(result.text, result.hint, result.styleLabel, 'ai_rephrase');
+        showToast(`✨ صياغة ${result.styleLabel} (${attemptNumber}/${MAX_REPHRASE_PER_QUESTION})`, 'success');
       } else {
-        markRephraseUsed(result.text, 'static_fallback');
-        showToast(`📝 تم إعادة الصياغة (${state.currentRephraseCount + 1}/${MAX_REPHRASE_PER_QUESTION})`, 'success');
+        markRephraseUsed(result.text, result.hint, result.styleLabel, 'static_fallback');
+        showToast(`📝 إعادة صياغة (${attemptNumber}/${MAX_REPHRASE_PER_QUESTION})`, 'success');
       }
     } catch (err) {
       console.error('[APEX] Rephrase error:', err);
-      markRephraseUsed(undefined, 'error_fallback');
+      markRephraseUsed(undefined, undefined, undefined, 'error_fallback');
       showToast('تم إعادة صياغة السؤال', 'success');
     } finally {
       setModalType('none');
@@ -107,12 +104,52 @@ function AppContent() {
     setModalType('hint');
   };
   const handleEndSession = () => {
-    // Show confirmation modal instead of ending immediately
     if (state.responses.length > 0) {
       setModalType('confirm_exit');
     } else {
       handleFinishAndNavigate();
     }
+  };
+
+  const handleSolutionNext = useCallback(() => {
+    if (currentQuestion) {
+      submitResponse({
+        selectedAnswer: '[solution_viewed]',
+        selectedIndex: -1,
+        isCorrect: false,
+        usedSolution: true,
+        confidence: 1,
+        difficulty: currentQuestion.difficulty,
+        reflection: 'عرض الحل النموذجي',
+      });
+    }
+    // isCheckpoint uses the CURRENT responses count, check +1 manually
+    const newCount = state.responses.length + 1;
+    const willCheckpoint = newCount > 0 && newCount % 5 === 0;
+    if (isLastQuestion) {
+      handleFinishAndNavigate();
+    } else if (willCheckpoint) {
+      setAppState('checkpoint');
+    } else {
+      nextQuestion();
+      setAppState('question');
+    }
+  }, [currentQuestion, submitResponse, state.responses.length, isLastQuestion, nextQuestion]);
+
+  const handleBreakOpen = () => {
+    markRestRequested();
+    startBreak();
+    setBreakSeconds(0);
+    if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+    breakIntervalRef.current = setInterval(() => setBreakSeconds(s => s + 1), 1000);
+    setModalType('break');
+  };
+
+  const handleBreakClose = () => {
+    endBreak();
+    if (breakIntervalRef.current) { clearInterval(breakIntervalRef.current); breakIntervalRef.current = null; }
+    setBreakSeconds(0);
+    setModalType('none');
   };
 
   // GAP-01 + GAP-04 + GAP-05: Save results to student state and navigate to /results
@@ -198,10 +235,12 @@ function AppContent() {
           timeSpentMs: r.timeSpent || 0,
           reflection: r.reflection || '',
           usedHint: r.usedHint || false,
-          usedSolution: false,
+          usedSolution: r.usedSolution || false,
           usedRephrase: r.usedRephrase || false,
-          rephraseCount: r.usedRephrase ? 1 : 0,
+          rephraseCount: r.rephraseLevel || 0,
           coachUsed: r.usedCoach || false,
+          restRequested: r.restRequested || false,
+          breakDurationMs: r.breakDurationMs || 0,
           inputModality: r.inputModality || 'keyboard',
         };
       }),
@@ -209,13 +248,20 @@ function AppContent() {
     const API = import.meta.env.VITE_API_URL ?? '';
     fetch(`${API}/api/sessions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(apiPayload),
     }).then(res => {
       if (res.ok) console.log('[APEX] ✅ Session saved to database');
       else console.warn('[APEX] ⚠️ API returned', res.status);
     }).catch(err => console.warn('[APEX] ⚠️ API offline, data in localStorage only:', err.message));
 
+    const learnReturn = localStorage.getItem('apex_learn_return');
+    if (learnReturn) {
+      localStorage.removeItem('apex_learn_return');
+      localStorage.removeItem('apex_learn_questions');
+      navigate(learnReturn);
+      return;
+    }
     navigate('/results');
   };
 
@@ -231,7 +277,7 @@ function AppContent() {
             onShowSolution={() => setAppState('solution')}
             onCallCoach={() => setCoachPanelOpen(true)}
             onRephrase={handleRephrase}
-            onTakeBreak={() => { markRestRequested(); setModalType('break'); }}
+            onTakeBreak={handleBreakOpen}
             onEndSession={handleEndSession}
             rephraseCount={state.currentRephraseCount}
             rephraseExhausted={state.currentRephraseCount >= MAX_REPHRASE_PER_QUESTION}
@@ -252,7 +298,7 @@ function AppContent() {
       case 'find_error': return <FindErrorView onBack={() => setAppState('strategies')} />;
       case 'conceptual': return <ConceptualView onBack={() => setAppState('strategies')} />;
       case 'brainstorming': return <BrainstormingView onBack={() => setAppState('strategies')} />;
-      case 'solution': return <SolutionView onBack={() => setAppState('question')} />;
+      case 'solution': return <SolutionView onBack={() => setAppState('question')} onNext={handleSolutionNext} />;
       case 'simpler_example': return <SimplerExample onBack={() => setAppState('strategies')} />;
       case 'summary': return <SessionEndSummary onEnd={handleFinishAndNavigate} />;
       default: return <SessionStart onStart={() => setAppState('question')} />;
@@ -274,8 +320,16 @@ function AppContent() {
       {/* Hint Modal */}
       <Modal isOpen={modalType === 'hint'} onClose={() => setModalType('none')} title="تلميح شارح" icon={<Lightbulb className="w-5 h-5 fill-current" />}>
         <div className="flex flex-col gap-5">
-          <p className="text-lg text-on-surface leading-loose">{currentQuestion?.hint?.text ?? 'لا يوجد تلميح'}</p>
-          {currentQuestion?.hint?.stepLabel && (
+          {state.currentRephraseHint && (
+            <div className="flex items-center gap-2 text-xs text-secondary font-bold bg-secondary/10 px-3 py-1.5 rounded-full w-fit">
+              <RefreshCcw className="w-3 h-3" />
+              تلميح الصياغة {state.currentRephraseStyleLabel}
+            </div>
+          )}
+          <p className="text-lg text-on-surface leading-loose">
+            {state.currentRephraseHint ?? currentQuestion?.hint?.text ?? 'لا يوجد تلميح'}
+          </p>
+          {!state.currentRephraseHint && currentQuestion?.hint?.stepLabel && (
             <div className="bg-surface-container/50 border border-primary/10 rounded-xl p-5 flex flex-col items-center font-mono" dir="ltr">
               <span className="text-xs text-on-surface-variant mb-2">{currentQuestion.hint.stepLabel}</span>
               <div className="text-2xl tracking-widest">{currentQuestion.hint.stepContent}</div>
@@ -286,14 +340,21 @@ function AppContent() {
       </Modal>
 
       {/* Break Modal */}
-      <Modal isOpen={modalType === 'break'} onClose={() => setModalType('none')} title="استراحة" icon={<Coffee className="w-5 h-5 text-primary" />}>
+      <Modal isOpen={modalType === 'break'} onClose={handleBreakClose} title="استراحة" icon={<Coffee className="w-5 h-5 text-primary" />}>
         <div className="flex flex-col items-center text-center gap-5">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
             <Coffee className="w-10 h-10 text-primary animate-bounce" />
           </div>
           <p className="text-xl font-bold">خذ وقتك، العقل يحتاج للراحة ليبدع!</p>
+          <div className="flex items-center gap-2 bg-surface-container/60 px-6 py-3 rounded-xl border border-primary/20">
+            <span className="text-3xl font-mono font-bold text-primary">
+              {`${Math.floor(breakSeconds / 60).toString().padStart(2, '0')}:${(breakSeconds % 60).toString().padStart(2, '0')}`}
+            </span>
+            <span className="text-xs text-on-surface-variant">مدة الراحة</span>
+          </div>
+          <p className="text-xs text-on-surface-variant">⏸ تايمر السؤال متوقف أثناء الاستراحة</p>
           <div className="flex flex-col w-full gap-2">
-            <button onClick={() => setModalType('none')} className="btn-primary py-3 rounded-xl">عدت للحل</button>
+            <button onClick={handleBreakClose} className="btn-primary py-3 rounded-xl">عدت للحل</button>
           </div>
         </div>
       </Modal>
@@ -324,7 +385,9 @@ function AppContent() {
           </div>
           <div>
             <p className="text-xl font-bold text-primary">{isAIAvailable() ? 'الذكاء الاصطناعي يعيد الصياغة...' : 'جاري إعادة الصياغة...'}</p>
-            <p className="text-sm text-on-surface-variant mt-1">يتم تبسيط السؤال بأسلوب أوضح</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              الأسلوب: {['أكاديمي', 'شبابي علمي', 'مبسّط جداً'][Math.min(state.currentRephraseCount, 2)]}
+            </p>
           </div>
           <div className="w-full h-1 bg-surface-container-high rounded-full overflow-hidden"><div className="h-full bg-primary animate-shimmer" style={{ width: '60%' }} /></div>
         </div>
@@ -409,7 +472,7 @@ function CheckpointDashboard({ responses, feedbackLevel, setFeedbackLevel, onCon
       <div className="w-full max-w-3xl">
         {/* Coach Chat Header */}
         <div className="glass-card rounded-t-2xl p-4 flex items-center gap-3 border-b border-primary/10">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_20px_rgba(111,209,215,0.3)]">
+          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_20px_rgba(208,188,255,0.3)]">
             <SmartToy className="w-6 h-6 text-primary" />
           </div>
           <div className="text-right flex-1">
@@ -458,7 +521,7 @@ function CheckpointDashboard({ responses, feedbackLevel, setFeedbackLevel, onCon
         </div>
 
         {/* Feedback + Continue */}
-        <div className="glass-card rounded-b-2xl p-6" style={{ borderTop: '1px solid rgba(140,237,243,0.1)', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+        <div className="glass-card rounded-b-2xl p-6" style={{ borderTop: '1px solid rgba(208,188,255,0.1)', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
           <h3 className="text-sm font-bold mb-3 text-on-surface-variant">كيف كان مستوى الأسئلة؟</h3>
           <div className="grid grid-cols-3 gap-3 mb-6" role="radiogroup">
             <FeedbackOption icon={<SentimentSatisfied />} label="سهل" active={feedbackLevel === 'easy'} onClick={() => setFeedbackLevel('easy')} />

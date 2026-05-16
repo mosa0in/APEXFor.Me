@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle2, Target, Clock, BarChart3, Sparkles, Brain, AlertTriangle, Lightbulb } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import { useCurriculum } from '../context/CurriculumContext';
+import { getAuthHeader } from '../services/backend';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -34,7 +35,7 @@ export default function ResultsPage() {
     // Try API first (authoritative source — BKT-computed)
     try {
       const slugParam = activeSlug ? `?slug=${encodeURIComponent(activeSlug)}` : '';
-      const res = await fetch(`${API}/api/results/${studentId}${slugParam}`);
+      const res = await fetch(`${API}/api/results/${studentId}${slugParam}`, { headers: getAuthHeader() });
       if (res.ok) {
         const data = await res.json();
         setAccuracy(data.accuracy || 0);
@@ -54,7 +55,7 @@ export default function ResultsPage() {
 
         // Load personality traits from coach analyzer
         try {
-          const analysisRes = await fetch(`${API}/api/student-analysis/${studentId}`);
+          const analysisRes = await fetch(`${API}/api/student-analysis/${studentId}`, { headers: getAuthHeader() });
           if (analysisRes.ok) {
             const analysisData = await analysisRes.json();
             setPersonalityTraits(analysisData.personality_traits || {});

@@ -27,7 +27,10 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'فشل تسجيل الدخول');
 
-      // Save session
+      // Clear any stale data from a previous session before saving new one
+      localStorage.removeItem('apex_active_curriculum');
+      localStorage.removeItem('apex_session');
+      localStorage.setItem('apex_token', data.token);
       localStorage.setItem('apex_current_student', data.student_id);
       localStorage.setItem(`apex_student_${data.student_id}`, JSON.stringify({
         student_id: data.student_id,
@@ -37,8 +40,8 @@ export default function LoginPage() {
         stars_total: data.stars_total,
       }));
 
-      await new Promise(r => setTimeout(r, 300));
-      navigate('/roadmap');
+      // Force full reload — clears stale CurriculumContext state
+      window.location.href = '/roadmap';
     } catch (e: any) {
       setError(e.message || 'فشل الاتصال بالخادم');
     } finally {

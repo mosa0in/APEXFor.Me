@@ -82,7 +82,7 @@ function OptionBtn({ label, content, shortcut, onClick, selected = false, disabl
   let cls = 'flex items-center gap-3 p-3.5 rounded-xl border transition-all text-right ';
   if (isCorrectAnswer) cls += 'answer-correct';
   else if (isWrongAnswer) cls += 'answer-wrong';
-  else if (selected) cls += 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(111,209,215,0.15)]';
+  else if (selected) cls += 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(208,188,255,0.15)]';
   else cls += 'border-primary/20 bg-surface-bright/30 hover:bg-surface-bright/60 hover:border-primary/50 group';
 
   let badge = 'w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base transition-colors ';
@@ -117,9 +117,9 @@ function TrueFalseInput({ question, disabled, resultRevealed, selectedIndex, onS
     const isCorrect = resultRevealed && idx === question.correctIndex;
     const isWrong = resultRevealed && isSelected && idx !== question.correctIndex;
 
-    if (isCorrect) return `${btnBase} border-tertiary bg-tertiary/15 text-tertiary shadow-[0_0_20px_rgba(90,246,214,0.2)]`;
+    if (isCorrect) return `${btnBase} border-tertiary bg-tertiary/15 text-tertiary shadow-[0_0_20px_rgba(255,184,105,0.2)]`;
     if (isWrong) return `${btnBase} border-error bg-error/15 text-error`;
-    if (isSelected) return `${btnBase} border-primary bg-primary/15 text-primary shadow-[0_0_20px_rgba(111,209,215,0.15)]`;
+    if (isSelected) return `${btnBase} border-primary bg-primary/15 text-primary shadow-[0_0_20px_rgba(208,188,255,0.15)]`;
     return `${btnBase} border-primary/20 bg-surface-bright/30 text-on-surface hover:bg-surface-bright/60 hover:border-primary/50`;
   };
 

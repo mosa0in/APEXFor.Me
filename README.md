@@ -1,390 +1,269 @@
-# APEX Curriculum Intelligence
+# APEX — منصة التعلم التكيّفي
 
-> **AI-Powered Adaptive Learning Infrastructure**
-> Curriculum Parsing · Knowledge Tracing · Anti-Hallucination RAG
+> **نظام ذكاء اصطناعي كامل للتعلم التكيّفي — مبني للإنتاج**
+> Adaptive Learning · Bayesian Knowledge Tracing · AI Coach · Space UI
+
+**Live:** [https://apexfor.me](https://apexfor.me)
 
 ---
 
-## What Is This?
-## ما هو هذا المشروع؟
+## ما هو APEX؟
 
-A complete AI pipeline that reads any textbook PDF, builds a Knowledge Graph of every concept and question, tracks what each student knows via Bayesian Knowledge Tracing, and provides tutoring answers grounded **only** in the curriculum — zero hallucination.
+منصة تعليمية ذكية تقرأ أي كتاب مدرسي PDF، تبني خريطة طريق معرفية لكل مفهوم، تتتبع ما يعرفه الطالب عبر نموذج BKT البايزي، وتقدم جلسات تعلم + اختبارات تشخيصية تكيّفية — كل ذلك بواجهة Space Theme باللغة العربية.
 
-Built for the **APEX Diagnostic** platform — an Olympiad-level adaptive math assessment system.
-
-> **بالعربي:** نظام ذكاء اصطناعي كامل يقرأ أي كتاب مدرسي PDF، يبني شبكة معرفية (Knowledge Graph) لكل مفهوم وسؤال، يتتبع ما يعرفه كل طالب عبر نموذج بايزي لتتبع المعرفة (BKT)، ويقدم إجابات مبنية **فقط** على المنهج — صفر هلوسة. مبني لمنصة **APEX التشخيصية** — نظام تقييم رياضيات تكيّفي على مستوى الأولمبياد.
+An intelligent learning platform that parses any PDF textbook, builds a concept roadmap, tracks per-student mastery via Bayesian Knowledge Tracing, and delivers adaptive diagnostic tests + learn sessions — fully bilingual (Arabic/English) with a space-themed UI.
 
 ```
 📄 PDF Textbook
+     ↓  IBM Docling (PDF → Markdown)
+🧩 Claude — Structure Extraction (BOOK → CH → SEC → CON → Q)
      ↓
-🧩 Claude LLM extracts structure (BOOK → CH → SEC → CON → Q)
+🗄️  SQLite — Curriculum + Interactions + Mastery Snapshots
      ↓
-🔵 Neo4j stores the Knowledge Graph
+🧠 5-Layer Intelligence Pipeline
      ↓
-🟣 Qdrant indexes vector embeddings
+🎯 Adaptive Diagnostic Test + Learn Session
      ↓
-🧠 SINKT (fine-tuned) tracks student mastery
-     ↓
-🎯 RAG Engine answers from curriculum only
-     ↓
-💻 APEX Diagnostic frontend
+🗺️  Knowledge Roadmap + AI Coach
 ```
 
 ---
 
-## Current State — الحالة الراهنة
+## الحالة الراهنة — APEX v4.1 (مكتمل وفي الإنتاج)
 
-> **بالعربي:** كل ملف مبني حالياً ووظيفته وحالته. الملفات بمجلد `src/` هي خط الأنابيب الأساسي، `sinkt/` فيها نموذج تتبع المعرفة، و `toolchain/` فيها أدوات التطوير الداخلية.
-
-### Core Pipeline — خط الأنابيب الأساسي (`src/`)
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `pdf_reader.py` | Reads PDF via LangChain `PyPDFLoader`, splits into chunks | ✅ Tested — 58 pages / 108 chunks from Thomas Calculus |
-| `structure_extractor.py` | Claude extracts BOOK/CH/SEC/CON/Q hierarchy → validated JSON | ✅ Built |
-| `models.py` | Pydantic schemas: `Curriculum`, `Chapter`, `Section`, `Concept`, `Question`, `StudentState`, `MasterySnapshot`, `BKTParams`, `DiagnosticResponse` | ✅ Built |
-| `graph_builder.py` | Builds Neo4j Knowledge Graph with CONTAINS, REQUIRES, TESTED_BY relationships | ✅ Built |
-| `qdrant_store.py` | Indexes concepts in Qdrant with payload filtering (by chapter, difficulty) | ✅ Built |
-| `rag_engine.py` | RAG chain: Qdrant retrieval → Claude answers from curriculum only | ✅ Built |
-| `diagnostic_selector.py` | **Layer 01** — Graph-aware question selection + BKT initialization + StudentState creation | ✅ Built |
-| `embeddings.py` | HuggingFace embeddings + Neo4j Vector Index (legacy, replaced by Qdrant) | ✅ Built |
-| `config.py` | Centralized settings from `.env` (Claude, Neo4j, Qdrant, SINKT) | ✅ Built |
-
-### SINKT Integration — نموذج تتبع المعرفة (`sinkt/`)
-
-> **بالعربي:** SINKT هو نموذج ذكاء اصطناعي بحثي (ورقة ACM CIKM 2024) يتنبأ: "هل الطالب يفهم هذا المفهوم أو لا؟" — تم دمج كوده الكامل داخل المشروع مع محوّلات (adapters) تربطه ببيانات المنهج وجلسات APEX.
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `models/SINKT.py` | Original SINKT model — GATConv + GRU + HeteroData Knowledge Graph | ✅ Integrated (from source) |
-| `train.py` | Training loop with BCE loss, AUC/accuracy metrics | ✅ Integrated |
-| `dataset_doubletext.py` | Data loader supporting BERT/LLaMA/ChatGLM embeddings | ✅ Integrated |
-| `main.py` | Entry point for SINKT training | ✅ Integrated |
-| `adapters/curriculum_adapter.py` | Converts extracted curriculum JSON → SINKT training format (pkl, npz, json) | ✅ Built |
-| `adapters/apex_adapter.py` | Converts APEX Diagnostic session CSV → SINKT training histories | ✅ Built |
-
-### Internal DevToolchain — أدوات التطوير الداخلية (`toolchain/`)
-
-> **بالعربي:** ثلاث أدوات مدمجة تسرّع التطوير وتُبهر المستثمرين: SocratiCode (بحث ذكي في الكود)، Spec-Kit (تطوير بالمواصفات)، Understand-Anything (تحويل الكود لرسم بياني بصري).
-
-| Tool | Purpose | Status |
-|------|---------|--------|
-| **SocratiCode** | AI code search, dependency graphs, impact analysis via MCP | ✅ Configured (`.mcp.json`) |
-| **Spec-Kit** | Specification-driven development workflow | ✅ Configured (`AGENTS.md`, `specs/`) |
-| **Understand-Anything** | Visual code Knowledge Graph generation | ✅ Configured (`generate.py`) |
-
-### Scripts (`scripts/`)
-
-| Script | Purpose |
-|--------|---------|
-| `ingest.py` | Full 6-step pipeline: PDF → Extract → JSON → Neo4j → Qdrant → SINKT data |
-| `fine_tune.py` | SINKT fine-tuning on curriculum or APEX session data |
-| `test_query.py` | Interactive RAG testing |
-| `setup_toolchain.py` | One-command setup for all three dev tools |
-
----
-
-## Project Structure — هيكل المشروع
-
-```
-apex-curriculum-intelligence/
-│
-├── AGENTS.md                         # AI agent instructions (Spec-Kit)
-├── CLAUDE.md                         # Claude Code instructions
-├── .mcp.json                         # SocratiCode MCP config
-├── .socraticodeignore                # Code indexing exclusions
-├── docker-compose.yml                # Neo4j 5.26 + Qdrant
-├── .env.example                      # API keys template
-├── requirements.txt                  # Python dependencies
-├── README.md                         # ← You are here
-│
-├── src/                              # ── Core Pipeline ──
-│   ├── config.py                     # Settings (Claude, Neo4j, Qdrant, SINKT)
-│   ├── models.py                     # All data models + BKT + mastery tracking
-│   ├── pdf_reader.py                 # PDF → chunks
-│   ├── structure_extractor.py        # Chunks → structured JSON (Claude)
-│   ├── graph_builder.py              # JSON → Neo4j Knowledge Graph
-│   ├── qdrant_store.py               # Concepts → Qdrant vectors
-│   ├── rag_engine.py                 # RAG: Qdrant + Claude (anti-hallucination)
-│   ├── diagnostic_selector.py        # Layer 01: diagnostic test engine
-│   └── embeddings.py                 # Legacy embedding module
-│
-├── sinkt/                            # ── SINKT (Forked + Modified) ──
-│   ├── models/
-│   │   └── SINKT.py                  # GATConv + GRU Knowledge Tracing
-│   ├── adapters/
-│   │   ├── curriculum_adapter.py     # Curriculum JSON → SINKT format
-│   │   └── apex_adapter.py           # APEX sessions → SINKT format
-│   ├── train.py                      # Training loop
-│   ├── dataset_doubletext.py         # Data processing
-│   └── main.py                       # SINKT entry point
-│
-├── toolchain/                        # ── Internal DevTools ──
-│   ├── speckit/specs/                # Project specifications
-│   └── understand/generate.py        # Code KG generator
-│
-├── neo4j-reference/                  # ── Research Reference ──
-│   └── README.md                     # Neo4j 5.26 source analysis + citation
-│
-├── scripts/                          # ── CLI Scripts ──
-│   ├── ingest.py                     # Full pipeline
-│   ├── fine_tune.py                  # SINKT training
-│   ├── test_query.py                 # RAG testing
-│   └── setup_toolchain.py           # DevTool setup
-│
-├── data/                             # ── Generated Data (auto) ──
-│   ├── curriculum.json               # Extracted curriculum structure
-│   ├── sinkt_data/                   # SINKT training files
-│   └── student_*.json                # Student mastery states
-│
-└── docs/
-    └── code_graph/                   # Understand-Anything output
-```
-
----
-
-## Technology Stack — التقنيات المستخدمة
-
-> **بالعربي:** كل تقنية ولماذا اخترناها. Claude للاستخلاص والإجابة، Neo4j للعلاقات بين المفاهيم، Qdrant للبحث الدلالي، SINKT لتتبع فهم الطالب، BKT للنمذجة الإحصائية.
-
-| Layer | Technology | Role |
-|-------|-----------|------|
-| LLM | Anthropic Claude | Structure extraction + RAG answers |
-| Framework | LangChain | PDF loading, text splitting, chain orchestration |
-| Knowledge Graph | Neo4j 5.26 | Stores curriculum hierarchy + relationships |
-| Vector Database | Qdrant | Semantic search for RAG retrieval |
-| Knowledge Tracing | SINKT (PyTorch + PyG) | Predicts student mastery per concept |
-| Mastery Model | BKT (Bayesian Knowledge Tracing) | Updates P(know) after each response |
-| Data Validation | Pydantic v2 | Enforces schemas at every boundary |
-| Code Intelligence | SocratiCode | Internal code search + dependency analysis |
-| Dev Workflow | Spec-Kit | Specification-driven task management |
-| Code Visualization | Understand-Anything | Interactive code Knowledge Graph |
-
----
-
-## System Design — التصميم الهندسي الكامل
-## المعمارية الخماسية — 5 طبقات ذكاء متراكمة
-
-The system operates as a **5-layer intelligence stack**. Each layer feeds the next:
-
-> **بالعربي:** النظام يعمل كـ 5 طبقات ذكاء، كل طبقة تُغذّي التالية. الطبقة الأولى (الاختبار التشخيصي) تحدد مستوى الطالب المبدئي. الثانية (تنقية البيانات) تكشف التخمين والغش. الثالثة (تحليل المايندسيت — **مساهمتنا الأصلية**) تقارن الإجابة بتفسير الطالب. الرابعة (تتبع الإتقان) تحدّث مستوى المعرفة. الخامسة (طبقة الأفعال) تقرر الخطوة التالية للطالب عبر MCP.
+### طبقات الذكاء الخمس — كلها مطبّقة
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    APEX INTELLIGENCE STACK                   │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 01  DIAGNOSTIC TEST                         ✅ BUILT │
-│  ─────────────────────────────────────────────────────────  │
-│  diagnostic_selector.py · BKT init · Graph traversal       │
-│  → Selects 1-2 questions per core concept                  │
-│  → Creates initial mastery_snapshots                       │
-│  → Determines starting point in Knowledge Graph            │
-│  → Without this, the system is BLIND                       │
-│                                                             │
+│  Layer 01  DIAGNOSTIC SELECTOR                     ✅ LIVE  │
+│  diagnostic_selector.py                                      │
+│  → اختيار أسئلة تشخيصية بناءً على صعوبة المنهج            │
+│  → بدء P(L₀) = 0.1 لكل مفهوم                              │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 02  GNN DENOISING                        🔲 PLANNED │
-│  ─────────────────────────────────────────────────────────  │
-│  denoising_engine.py · DGKT · LPKT · Graph-aware           │
-│  → Compares response to position in Graph                  │
-│  → Correct on "Calculus" but failed "Addition" = GUESS     │
-│  → Outputs weighted_correct for each response              │
-│  → Handles: Guess, Slip, Cheating, Bad Day                 │
-│                                                             │
+│  Layer 02  DENOISING ENGINE                        ✅ LIVE  │
+│  denoising_engine.py                                         │
+│  → compute_weighted_correct: تنقية الإجابات                │
+│  → يحسب: ثقة الطالب، التلميح، الحل المعروض، إعادة الصياغة │
+│  → 3 مستويات إعادة صياغة: 1.0× / 0.8× / 0.6×             │
+│  → عرض الحل → weighted = 0.0 (استبعاد كامل من BKT)         │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 03  MINDSET ANALYSIS ★ ORIGINAL         🔲 PLANNED │
-│  ─────────────────────────────────────────────────────────  │
-│  mindset_analyzer.py · Bloom's · Vygotsky ZPD              │
-│  → Compares answer vs student's explanation                │
-│  → "Correct + can't explain why" ≠ "Correct + explains"   │
-│  → Gap reveals root cause of failure                       │
-│  → Classifies: conceptual / procedural / none              │
-│  → NO ONE HAS DONE THIS BEFORE — our winning paper         │
-│                                                             │
+│  Layer 03  MINDSET ANALYZER                        ✅ LIVE  │
+│  mindset_analyzer.py                                         │
+│  → يقارن الإجابة بتفسير الطالب                             │
+│  → يكتشف: conceptual / procedural / false_confidence gap    │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 04  MASTERY TRACKING                     🔲 PLANNED │
-│  ─────────────────────────────────────────────────────────  │
-│  mastery_tracker.py · pyKT · DKT · AKT                     │
-│  → Fed DENOISED data (not raw responses)                   │
-│  → Guided by SINKT's Knowledge Graph                       │
-│  → Updates mastery_estimate after every answer             │
-│  → Not blind — sees prerequisite context                   │
-│                                                             │
+│  Layer 04  BKT MASTERY TRACKING                    ✅ LIVE  │
+│  mastery_tracker.py                                          │
+│  → bkt_update بعد كل إجابة منقّاة                         │
+│  → check_mastery_gate: threshold 0.8                        │
+│  → mastery_snapshots محفوظة في SQLite                       │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 05  ACTION LAYER (MCP Agent)             🔲 PLANNED │
-│  ─────────────────────────────────────────────────────────  │
-│  mcp_agent.py · RLM · Guardrails                           │
-│  → LLM thinks first (RLM), then calls tools via MCP       │
-│  → Tools: get_student_state, fetch_concept,                │
-│           get_next_question, update_mastery,               │
-│           run_socratic_probe                               │
-│  → NEVER gives the answer — guides student to it           │
-│  → Pedagogical guardrails enforced                         │
-│                                                             │
+│  Layer 05  MCP AGENT + AI COACH                    ✅ LIVE  │
+│  mcp_agent.py · CoachPanel                                  │
+│  → كوتش ذكي بشخصيات متعددة (محفّز / سقراطي / صديق / صارم)│
+│  → استراتيجيات تعلم تفاعلية داخل الاختبار                 │
+│  → استدعاء MCP tools: get_student_state, get_next_question  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow Between Layers — تدفق البيانات بين الطبقات
+---
 
-> **بالعربي:** البيانات تنتقل تسلسلياً: الطالب يجيب ← الإجابة تُنقّى ← تُحلّل الفجوة ← يُحدّث مستوى الإتقان ← يُقرّر الإجراء التعليمي المناسب.
+## المميزات الكاملة
+
+### الاختبار التشخيصي
+- أسئلة MCQ + صح/خطأ + إدخال نصي (تقييم ذاتي)
+- **تايمر مرئي** مع إمكانية وقف أثناء الاستراحة
+- **عرض الحل** → ينتقل تلقائياً للسؤال التالي، يُسجّل في BKT كـ `isCorrect: false`
+- **إعادة صياغة مدرّجة** (3 مستويات: أكاديمي → شبابي علمي → مبسّط جداً) — كل مستوى يولّد سؤاله وتلميحه
+- **نقطة تفتيش** كل 5 أسئلة — حفظ مؤقت للجلسة
+- Break timer منفصل محفوظ في قاعدة البيانات
+
+### جلسة التعلم
+- شرائح تعليمية (تعريف + أمثلة + صيغة + إضاءة ذكية) مُولَّدة بالذكاء الاصطناعي
+- **Prefetch في الخلفية**: يجهّز الاختبار أثناء الدراسة — الزر يتحول أخضر عند الجاهزية
+- دعم مفاهيم المنهج الخارجية (External Concepts) من خريطة الطريق
+
+### خريطة الطريق
+- خريطة بصرية لكل مفاهيم المنهج مع مستوى الإتقان
+- عقد جانبية: prerequisite / related / extension
+- مؤشر تقدم لكل قسم
+
+### الكوتش الذكي
+- 4 شخصيات: المحفّز 🔥 / السقراطي 🧠 / الصديق 🤝 / الصارم ⚡
+- استراتيجيات تفاعلية: خطوة بخطوة، تدفق بصري، مقارنة، بازل ترتيب، إيجاد الخطأ
+- دعم الصوت (Speech-to-Text) عبر Whisper
+
+---
+
+## التقنيات
+
+| الطبقة | التقنية | الدور |
+|--------|---------|-------|
+| Backend | FastAPI + Python 3.12 | API Server |
+| Database | SQLite (WAL mode) | Curriculum + Interactions + Mastery |
+| PDF Extraction | IBM Docling | PDF → Markdown (bilingual) |
+| LLM | Anthropic Claude (claude-sonnet-4-5) | Structure + Coach + Questions |
+| Frontend | React 18 + Vite + TypeScript | SPA |
+| Styling | Tailwind CSS v4 + IBM Plex Sans Arabic | Space Theme |
+| Speech | OpenAI Whisper API | Voice input |
+| Auth | Token-based (SQLite auth_tokens) | Session management |
+| Deploy | nginx + systemd (VPS) | Production |
+
+---
+
+## هيكل المشروع
 
 ```
-Student → [Layer 01: Diagnostic] → mastery_snapshots (initial)
-                                         ↓
-       → [Layer 02: Denoising]  → weighted_correct (clean signal)
-                                         ↓
-       → [Layer 03: Mindset]    → gap_classification (conceptual/procedural)
-                                         ↓
-       → [Layer 04: Mastery]    → mastery_estimate (updated P(know))
-                                         ↓
-       → [Layer 05: MCP Agent]  → pedagogical_action (next step for student)
+apex/
+├── api/
+│   ├── server.py                # FastAPI app + DB init + migrations
+│   ├── pipeline.py              # PDF → Curriculum pipeline
+│   ├── utils.py                 # DB connection + auth helpers
+│   └── routers/
+│       ├── auth.py              # Login / logout / token
+│       ├── students.py          # Student profile + onboarding
+│       ├── sessions.py          # Diagnostic session submission (5-layer pipeline)
+│       ├── learn.py             # Learn session slides + questions
+│       ├── diagnostic.py        # Diagnostic question generation
+│       ├── curricula.py         # Curriculum CRUD + upload
+│       ├── intelligence.py      # AI Coach + RAG
+│       ├── mastery.py           # Mastery snapshots
+│       ├── graph.py             # Knowledge graph API
+│       ├── sinkt.py             # SINKT embeddings
+│       ├── mcp.py               # MCP agent tools
+│       └── whisper.py           # Speech-to-text
+│
+├── src/
+│   ├── config.py                # Settings (.env)
+│   ├── models.py                # Pydantic models
+│   ├── ai_enricher.py           # AI enrichment pipeline
+│   ├── diagnostic_selector.py   # Layer 01: question selection
+│   ├── denoising_engine.py      # Layer 02: weighted_correct
+│   ├── mindset_analyzer.py      # Layer 03: gap detection
+│   ├── mastery_tracker.py       # Layer 04: BKT update
+│   ├── mcp_agent.py             # Layer 05: MCP tools
+│   ├── docling_extractor.py     # PDF → Markdown (Docling)
+│   ├── question_generator.py    # AI question generation
+│   └── external_concept_generator.py  # Side-node concept generation
+│
+├── frontend/
+│   ├── src/
+│   │   ├── index.css            # Space theme (purple palette + star field)
+│   │   ├── App.tsx              # Main app + modals + session management
+│   │   ├── pages/
+│   │   │   ├── RoadmapPage.tsx      # Knowledge roadmap
+│   │   │   ├── LearnSessionPage.tsx # Learn slides + prefetch
+│   │   │   ├── ResultsPage.tsx      # Session results
+│   │   │   ├── CurriculumPage.tsx   # Curriculum overview
+│   │   │   ├── UploadPage.tsx       # PDF upload + pipeline status
+│   │   │   ├── LoginPage.tsx        # Auth
+│   │   │   └── SignupPage.tsx       # Registration
+│   │   ├── components/
+│   │   │   ├── MainQuestion.tsx     # Question display + timer + break
+│   │   │   ├── CoachPanel.tsx       # AI coach side panel
+│   │   │   ├── QuestionRenderer.tsx # MCQ / True-False / Text input
+│   │   │   ├── Strategies.tsx       # Interactive coach strategies
+│   │   │   └── AppShell.tsx         # Navigation shell
+│   │   ├── context/
+│   │   │   ├── SessionContext.tsx   # Test state + BKT events
+│   │   │   └── CurriculumContext.tsx
+│   │   └── services/
+│   │       ├── ai.ts            # Rephrase + coach AI calls
+│   │       └── backend.ts       # API client
+│   └── package.json
+│
+├── deploy_dist.py               # Deploy built frontend + backend to VPS
+├── requirements.txt
+├── SPEC.md                      # Full system specification
+├── CLAUDE.md                    # Agent instructions
+└── .env                         # API keys (never commit)
 ```
 
-### Knowledge Graph Schema — مخطط شبكة المعرفة (Neo4j)
+---
 
-> **بالعربي:** العُقد (Nodes) تمثل: الكتاب، الفصل، الدرس، المفهوم، السؤال، الطالب، والإجابة. العلاقات (Relationships) تربط بينها: يحتوي، يتطلب (متطلبات سابقة)، يُختبر بـ، أتقن، يعاني من.
-
-```
-Nodes:
-  (:Book)     — Textbook metadata
-  (:Chapter)  — Chapter with number + summary
-  (:Section)  — Section with page reference
-  (:Concept)  — Core unit: name, description, difficulty, formulas
-  (:Question) — Test item: text, type, difficulty, Bloom's level
-  (:Student)  — Linked to mastery states
-  (:Response) — Individual answer with confidence + time
-
-Relationships:
-  (Book)-[:CONTAINS]->(Chapter)
-  (Chapter)-[:CONTAINS]->(Section)
-  (Section)-[:CONTAINS]->(Concept)
-  (Concept)-[:TESTED_BY]->(Question)
-  (Concept)-[:REQUIRES]->(Concept)          # prerequisite chain
-  (Concept)-[:RELATED_TO]->(Concept)        # semantic similarity
-  (Student)-[:ATTEMPTED]->(Question)
-  (Student)-[:MASTERED]->(Concept)           # from Layer 04
-  (Student)-[:STRUGGLING_WITH]->(Concept)    # from Layer 01
-```
-
-### BKT — تتبع المعرفة البايزي (المعادلات الرياضية)
-
-> **بالعربي:** بعد كل إجابة، نحدّث احتمال P(L) أن الطالب يعرف المفهوم. لو أجاب صح → الاحتمال يرتفع. لو أجاب غلط → ينخفض. لكن نأخذ بالحسبان التخمين P(G)=0.25 والزلة P(S)=0.10. لما P(L) يوصل 0.8+ نعتبره "أتقن المفهوم".
+## BKT — المعادلات
 
 ```
-After each response, update P(L) for the concept:
+بعد كل إجابة منقّاة (weighted_correct):
 
-If CORRECT:
+إجابة صحيحة:
   P(L|correct) = P(L)·(1-P(S)) / [P(L)·(1-P(S)) + (1-P(L))·P(G)]
 
-If WRONG:
+إجابة خاطئة:
   P(L|wrong) = P(L)·P(S) / [P(L)·P(S) + (1-P(L))·(1-P(G))]
 
-Learning transition:
+انتقال التعلم:
   P(L_new) = P(L|obs) + (1 - P(L|obs)) · P(T)
 
-Where:
-  P(L₀) = 0.10  prior probability of knowing
-  P(T)  = 0.10  probability of learning per opportunity
-  P(S)  = 0.10  probability of slip (knows but answers wrong)
-  P(G)  = 0.25  probability of guess (doesn't know but answers right)
+المعاملات:
+  P(L₀) = 0.10   احتمال المعرفة المبدئي
+  P(T)  = 0.10   احتمال التعلم من الفرصة
+  P(S)  = 0.10   احتمال الزلة (يعرف لكن أخطأ)
+  P(G)  = 0.25   احتمال التخمين
 
-Mastery classification:
+بوابات الإتقان:
   P(L) < 0.3  → NOT_MASTERED
   P(L) < 0.6  → LEARNING
   P(L) < 0.8  → NEARLY_MASTERED
-  P(L) ≥ 0.8  → MASTERED
+  P(L) ≥ 0.8  → MASTERED ✓
 ```
 
 ---
 
-## Quick Start — التشغيل السريع
+## التشغيل المحلي
 
-> **بالعربي:** 7 خطوات لتشغيل النظام بالكامل: تثبيت المكتبات، إعداد مفاتيح API، تشغيل قواعد البيانات، تشغيل الاستخلاص، إعداد أدوات التطوير، اختبار RAG، وتدريب SINKT.
-
-### 1. Install dependencies
+### Backend
 ```bash
 pip install -r requirements.txt
+cp .env.example .env        # أضف ANTHROPIC_API_KEY
+uvicorn api.server:app --reload --port 8000
 ```
 
-### 2. Configure environment
+### Frontend
 ```bash
-cp .env.example .env
-# Add your ANTHROPIC_API_KEY
+cd frontend
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-### 3. Start databases
+### Deploy to VPS
 ```bash
-docker-compose up -d
-# Neo4j Browser: http://localhost:7474
-# Qdrant Dashboard: http://localhost:6333/dashboard
-```
-
-### 4. Run the full pipeline
-```bash
-python -m scripts.ingest --pdf "C:\Users\MSI\Downloads\Thomas_Calculus.pdf"
-```
-
-### 5. Setup dev toolchain
-```bash
-python -m scripts.setup_toolchain
-```
-
-### 6. Test RAG
-```bash
-python -m scripts.test_query --interactive
-```
-
-### 7. Fine-tune SINKT
-```bash
-python -m scripts.fine_tune --data-only           # Prepare data
-python -m scripts.fine_tune                        # Full training
-python -m scripts.fine_tune --apex-csv data.csv    # Train on real APEX data
+cd frontend && npm run build && cd ..
+python deploy_dist.py
 ```
 
 ---
 
-## Research Citations — الاستشهادات البحثية
+## الهوية البصرية
 
-> **بالعربي:** مراجع BibTeX جاهزة للورقة البحثية.
+Space Theme بألوان Material Design 3 للفضاء:
 
-```bibtex
-@inproceedings{sinkt2024,
-  title={SINKT: A Structure-Aware Inductive Knowledge Tracing Model
-         with Large Language Model},
-  author={...},
-  booktitle={ACM CIKM},
-  year={2024}
-}
+| اللون | Hex | الدور |
+|-------|-----|-------|
+| Deep Navy | `#15121b` | الخلفية |
+| Electric Purple | `#d0bcff` | Primary |
+| Electric Blue | `#adc6ff` | Secondary |
+| Amber | `#ffb869` | Tertiary / Correct |
+| Error Red | `#ffb4ab` | خطأ |
 
-@misc{neo4j2024,
-  title={Neo4j Graph Database},
-  note={Version 5.26, Community Edition},
-  url={https://neo4j.com}
-}
+خلفية الـ body: حقل نجوم CSS (3 طبقات radial-gradient) + سدم نيبولا بنفسجية وزرقاء.
 
-@misc{langchain2024,
-  title={LangChain: Building Applications with LLMs},
-  url={https://github.com/langchain-ai/langchain}
-}
+---
+
+## متغيرات البيئة
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+LLM_MODEL=claude-sonnet-4-5
+SECRET_KEY=your-secret-key
+DB_PATH=api/apex_data.db
+UPLOAD_DIR=api/uploads
 ```
 
 ---
 
-## Connection to APEX Diagnostic — الربط بمنصة APEX
+## الترخيص
 
-This project is the **backend intelligence layer** for [APEX Diagnostic](https://dist-pi-sandy-98.vercel.app):
-
-> **بالعربي:** هذا المشروع هو "العقل الخلفي" لمنصة APEX التشخيصية. كل ميزة في الواجهة الأمامية تُغذّى من إحدى الطبقات الخمس.
-
-| APEX Feature | Powered By |
-|-------------|-----------|
-| Adaptive question selection | Layer 01 (diagnostic_selector) + Neo4j Graph traversal |
-| AI Coach responses | RAG Engine (Qdrant + Claude) — curriculum-grounded |
-| Student mastery tracking | BKT + SINKT Knowledge Tracing |
-| Concept gap analysis | Layer 03 (mindset_analyzer) — planned |
-| Data denoising | Layer 02 (denoising_engine) — planned |
-| Pedagogical agent | Layer 05 (mcp_agent) — planned |
+Private — جميع الحقوق محفوظة لـ Mosa Al-Wahidi.

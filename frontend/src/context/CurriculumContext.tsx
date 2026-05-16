@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getAuthHeader, clearCurriculumCache } from '../services/backend';
 
 // ═══════════════════════════════════════════
 // Types
@@ -13,7 +14,7 @@ export interface CurriculumItem {
   total_concepts: number;
   total_exercises: number;
   total_sections: number;
-  status: 'processing' | 'ready' | 'error' | 'analyzing_pdf' | 'enriching' | 'storing';
+  status: 'processing' | 'ready' | 'error' | 'analyzing_pdf' | 'enriching' | 'storing' | 'extracting_pdf';
   error_message?: string;
   created_at: string;
 }
@@ -51,14 +52,33 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
 
   const fetchCurricula = async () => {
     try {
-      const currentStudent = localStorage.getItem('apex_current_student') || '';
-      const url = currentStudent
-        ? `${API}/api/curricula?student_id=${encodeURIComponent(currentStudent)}`
-        : `${API}/api/curricula`;
-      const res = await fetch(url);
+      const token = localStorage.getItem('apex_token');
+      if (!token) {
+        setCurricula([]);
+        setLoading(false);
+        return;
+      }
+      const url = `${API}/api/curricula`;
+      const res = await fetch(url, { headers: getAuthHeader() });
+      if (res.status === 401) {
+        // Token is invalid or expired — clear session entirely
+        localStorage.removeItem('apex_token');
+        localStorage.removeItem('apex_current_student');
+        localStorage.removeItem('apex_active_curriculum');
+        setCurricula([]);
+        setActiveSlug(null);
+        setLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: CurriculumItem[] = await res.json();
       setCurricula(data);
+
+      // If the stored slug doesn't belong to this user — clear it immediately
+      if (activeSlug && !data.find(c => c.slug === activeSlug)) {
+        setActiveSlug(null);
+        localStorage.removeItem('apex_active_curriculum');
+      }
 
       // Auto-select first ready curriculum WITH actual content if none selected
       if (!activeSlug || !data.find(c => c.slug === activeSlug && c.status === 'ready' && c.total_concepts > 0)) {
@@ -70,7 +90,7 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
       }
 
       // If any curriculum is processing, poll again in 3s
-      if (data.some(c => ['processing', 'analyzing_pdf', 'enriching', 'storing'].includes(c.status))) {
+      if (data.some(c => ['processing', 'analyzing_pdf', 'enriching', 'storing', 'extracting_pdf'].includes(c.status))) {
         setTimeout(fetchCurricula, 3000);
       }
     } catch (e) {
@@ -85,8 +105,10 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const switchCurriculum = (slug: string) => {
+    clearCurriculumCache(); // flush per-slug cache in backend.ts
     setActiveSlug(slug);
     localStorage.setItem('apex_active_curriculum', slug);
+    window.dispatchEvent(new CustomEvent('apex:curriculum-switch', { detail: { slug } }));
   };
 
   const activeCurriculum = curricula.find(c => c.slug === activeSlug) || null;

@@ -3,6 +3,7 @@ import { useSession } from '../context/SessionContext';
 import { RefreshCcw, Coffee, SupportAgent, ArrowLeft, PsychologyAlt, Edit3, Lightbulb, Eye, Schedule, CheckCircle, XCircle, Send, AlertCircle, Mic } from './icons';
 import { MAX_REPHRASE_PER_QUESTION } from '../context/SessionContext';
 import QuestionRenderer, { type AnswerPayload } from './QuestionRenderer';
+import { isEnglishText, getArabicQuestionExplanation, isAIAvailable } from '../services/ai';
 
 interface MainQuestionProps {
   onNext: () => void;
@@ -17,7 +18,7 @@ interface MainQuestionProps {
 }
 
 function Confetti() {
-  const colors = ['#5af6d6', '#8cedf3', '#95cdf3', '#ffb4ab', '#FFD700', '#FF69B4', '#7B68EE'];
+  const colors = ['#d0bcff', '#adc6ff', '#ffb869', '#ffb4ab', '#FFD700', '#FF69B4', '#c084fc'];
   return (
     <div className="confetti-container" aria-hidden="true">
       {Array.from({ length: 40 }).map((_, i) => (
@@ -43,6 +44,8 @@ const CONFIDENCE_LABELS = ['مش متأكد خالص', 'شبه مش متأكد',
 
 export default function MainQuestion({ onNext, onShowHint, onShowSolution, onCallCoach, onRephrase, onTakeBreak, onEndSession, rephraseCount, rephraseExhausted }: MainQuestionProps) {
   const { state, currentQuestion, totalQuestions, submitResponse, setInputModality } = useSession();
+  const breakActiveRef = useRef(false);
+  useEffect(() => { breakActiveRef.current = state.breakActive; }, [state.breakActive]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [textAnswerSubmitted, setTextAnswerSubmitted] = useState(false);
   const [textAnswerPayload, setTextAnswerPayload] = useState<AnswerPayload | null>(null);
@@ -55,6 +58,27 @@ export default function MainQuestion({ onNext, onShowHint, onShowSolution, onCal
   const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Arabic Explanation (for English questions) ──
+  const [arabicExp, setArabicExp] = useState<string | null>(null);
+  const [arabicExpLoading, setArabicExpLoading] = useState(false);
+  const [arabicExpVisible, setArabicExpVisible] = useState(false);
+
+  // Reset Arabic explanation when question changes
+  useEffect(() => { setArabicExp(null); setArabicExpVisible(false); }, [currentQuestion?.id]);
+
+  const handleShowArabicExp = async () => {
+    if (!currentQuestion) return;
+    setArabicExpVisible(true);
+    if (arabicExp) return; // already loaded
+    setArabicExpLoading(true);
+    try {
+      const text = await getArabicQuestionExplanation(currentQuestion);
+      setArabicExp(text);
+    } finally {
+      setArabicExpLoading(false);
+    }
+  };
 
   // ── Speech-to-Text ──
   const [isListening, setIsListening] = useState(false);
@@ -106,7 +130,7 @@ export default function MainQuestion({ onNext, onShowHint, onShowSolution, onCal
     setElapsed(0); setSelectedOption(null); setIsSubmitted(false); setIsCorrect(false);
     setResultRevealed(false); setConfidence(0); setReflection(''); setIsSaved(false); setShowConfetti(false);
     setTextAnswerSubmitted(false); setTextAnswerPayload(null);
-    timerRef.current = setInterval(() => setElapsed(p => p + 1), 1000);
+    timerRef.current = setInterval(() => { if (!breakActiveRef.current) setElapsed(p => p + 1); }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [state.currentQuestionIndex]);
 
@@ -246,11 +270,13 @@ export default function MainQuestion({ onNext, onShowHint, onShowSolution, onCal
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
         {/* Main Column */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className={`glass-card rounded-2xl p-6 md:p-10 flex-grow flex flex-col justify-center text-center ${state.showRephrasedText ? 'ring-2 ring-secondary/40 shadow-[0_0_30px_rgba(140,237,243,0.15)]' : ''}`} style={state.showRephrasedText ? { animation: 'page-enter 0.4s ease-out' } : undefined}>
+          <div className={`glass-card rounded-2xl p-6 md:p-10 flex-grow flex flex-col justify-center text-center ${state.showRephrasedText ? 'ring-2 ring-secondary/40 shadow-[0_0_30px_rgba(208,188,255,0.15)]' : ''}`} style={state.showRephrasedText ? { animation: 'page-enter 0.4s ease-out' } : undefined}>
             {state.showRephrasedText && (
               <div className="mb-4 inline-flex items-center gap-2 bg-secondary/15 text-secondary text-sm font-bold px-4 py-2 rounded-full mx-auto border border-secondary/30" style={{ animation: 'page-enter 0.3s ease-out' }}>
                 <RefreshCcw className="w-4 h-4" />
-                {state.rephrasedAIText ? '✨ صيغة AI مبسطة' : '📝 صيغة مبسطة'}
+                {state.rephrasedAIText
+                ? `✨ صيغة ${state.currentRephraseStyleLabel || 'AI'} — المحاولة ${state.currentRephraseCount}`
+                : '📝 صيغة مبسطة'}
               </div>
             )}
             <h2 className={`text-2xl md:text-3xl font-bold mb-10 ${state.showRephrasedText ? 'text-secondary' : 'text-on-surface'}`}>{questionText}</h2>
@@ -315,6 +341,31 @@ export default function MainQuestion({ onNext, onShowHint, onShowSolution, onCal
                     ? `إجابة غير مطابقة${currentQuestion.correctAnswer ? `. الإجابة النموذجية: ${currentQuestion.correctAnswer}` : ''}`
                     : `إجابة خاطئة. الصحيحة: ${currentQuestion.options[currentQuestion.correctIndex]?.content || ''}`
                 }
+              </div>
+            )}
+
+            {/* Arabic question explanation (for English questions) */}
+            {currentQuestion && isEnglishText(currentQuestion.text) && isAIAvailable() && (
+              <div className="mt-4 pt-3 border-t border-secondary/10">
+                <button
+                  onClick={handleShowArabicExp}
+                  className="flex items-center gap-2 text-xs text-secondary/70 hover:text-secondary transition-colors mx-auto"
+                >
+                  <span className="text-sm">🌐</span>
+                  <span>ما الذي يطلبه السؤال؟ (شرح عربي)</span>
+                </button>
+                {arabicExpVisible && (
+                  <div className="mt-2.5 rounded-xl bg-secondary/5 border border-secondary/15 p-3 text-right" style={{animation:'page-enter 0.3s ease-out'}}>
+                    {arabicExpLoading ? (
+                      <div className="flex items-center gap-2 justify-center py-1">
+                        <div className="w-3 h-3 rounded-full border border-secondary border-t-transparent animate-spin" />
+                        <span className="text-xs text-secondary/60">جاري الشرح...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-on-surface-variant leading-relaxed">{arabicExp}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

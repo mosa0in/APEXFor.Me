@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Brain, LogOut, Settings, ChevronDown, Smile } from 'lucide-react';
 import { AvatarSVG, AvatarConfig, DEFAULT_AVATAR } from './AvatarSVG';
+import { getAuthHeader } from '../services/backend';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 const PERSONALITY = {
   motivator: { emoji: '🔥', label: 'المحفّز',  ring: '#ff6b6b', bg: 'rgba(255,107,107,0.15)' },
-  socratic:  { emoji: '🧠', label: 'السقراطي', ring: '#6fd1d7', bg: 'rgba(111,209,215,0.15)' },
+  socratic:  { emoji: '🧠', label: 'السقراطي', ring: '#d0bcff', bg: 'rgba(208,188,255,0.15)' },
   friendly:  { emoji: '🤝', label: 'الصديق',   ring: '#82dc82', bg: 'rgba(130,220,130,0.15)' },
   strict:    { emoji: '⚡', label: 'الصارم',   ring: '#ffb869', bg: 'rgba(255,184,105,0.15)' },
-  default:   { emoji: '✨', label: 'كوتش',      ring: '#6fd1d7', bg: 'rgba(111,209,215,0.15)' },
+  default:   { emoji: '✨', label: 'كوتش',      ring: '#d0bcff', bg: 'rgba(208,188,255,0.15)' },
 } as const;
 type PersonalityKey = keyof typeof PERSONALITY;
 
@@ -58,7 +59,7 @@ export default function AvatarBubble() {
     // Refresh avatar from storage on mount
     setAvatar(loadAvatar(studentId));
     // Hydrate full profile from API
-    fetch(`${API}/api/auth/me/${studentId}`)
+    fetch(`${API}/api/auth/me/${studentId}`, { headers: getAuthHeader() })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
@@ -131,8 +132,8 @@ export default function AvatarBubble() {
         <div
           className="absolute left-0 top-full mt-2 w-64 rounded-2xl z-50 overflow-hidden"
           style={{
-            background: 'rgba(0,12,24,0.96)',
-            border: '1px solid rgba(140,237,243,0.12)',
+            background: 'rgba(14,12,20,0.96)',
+            border: '1px solid rgba(208,188,255,0.12)',
             backdropFilter: 'blur(24px)',
             animation: 'fadeUp 0.18s ease-out',
             boxShadow: '0 24px 64px rgba(0,0,0,0.5)',

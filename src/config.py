@@ -6,7 +6,9 @@ Centralized settings for all components: LLM, Neo4j, Qdrant, SINKT.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Use absolute path so .env is found regardless of working directory
+_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+load_dotenv(_ENV_PATH)
 
 
 class Settings:
@@ -14,7 +16,7 @@ class Settings:
 
     # --- LLM (Claude) ---
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-sonnet-4-20250514")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
 
     # --- LLM (Gemini) ---
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

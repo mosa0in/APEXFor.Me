@@ -72,6 +72,12 @@ def _pipeline_worker(pdf_path: str, curriculum_id: int, name: str, db_path: str 
         _update_status(curriculum_id, "enriching", db_path)
 
         # ── Step 2: AI Enrichment (from Markdown) ─────────────────────
+        from src.config import settings as _cfg
+        _key_ok = bool(_cfg.ANTHROPIC_API_KEY)
+        print(f"[Pipeline] AI config: key={'SET' if _key_ok else 'MISSING'}  model={_cfg.LLM_MODEL}")
+        if not _key_ok:
+            raise RuntimeError("ANTHROPIC_API_KEY is not set — check .env file")
+
         from src.ai_enricher import enrich_from_markdown
         enriched_path = os.path.join("data", f"curriculum_{curriculum_id}.json")
 
@@ -100,7 +106,7 @@ def _pipeline_worker(pdf_path: str, curriculum_id: int, name: str, db_path: str 
                                          "PDF may not be a valid textbook.")
             return
 
-        # Update curricula row — only mark ready if content exists
+        # Update curricula row — status will move to 'ready' after step 4
         conn.execute("""
             UPDATE curricula SET
                 book_title = ?,
@@ -110,7 +116,7 @@ def _pipeline_worker(pdf_path: str, curriculum_id: int, name: str, db_path: str 
                 total_concepts = ?,
                 total_exercises = ?,
                 curriculum_json = ?,
-                status = 'ready',
+                status = 'stored',
                 updated_at = ?
             WHERE id = ?
         """, (
@@ -130,15 +136,21 @@ def _pipeline_worker(pdf_path: str, curriculum_id: int, name: str, db_path: str 
         for ch in curriculum.chapters:
             for sec in ch.sections:
                 for con in sec.concepts:
+                    ext_prereqs_json = json.dumps(
+                        [ep.model_dump() for ep in con.external_prerequisites],
+                        ensure_ascii=False,
+                    )
                     conn.execute("""
                         INSERT INTO concepts
                         (curriculum_id, concept_id, name, description, section_title,
-                         difficulty_level, is_core, exercise_count, prerequisites)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         difficulty_level, is_core, exercise_count, prerequisites,
+                         external_prerequisites)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         curriculum_id, con.id, con.name, con.description,
                         sec.title, con.difficulty_level, int(con.is_core),
                         con.exercise_count, json.dumps(con.prerequisites),
+                        ext_prereqs_json,
                     ))
 
                     # Populate flat curriculum Q+A table for fast question lookup
@@ -162,8 +174,39 @@ def _pipeline_worker(pdf_path: str, curriculum_id: int, name: str, db_path: str 
         conn.commit()
         conn.close()
 
-        print(f"[Pipeline] DONE Complete! Curriculum #{curriculum_id}: "
-              f"{curriculum.total_concepts} concepts, {curriculum.total_questions} exercises")
+        # ── Mark READY immediately — user can access curriculum now ─────
+        _update_status(curriculum_id, "ready", db_path)
+        print(f"[Pipeline] DONE Curriculum #{curriculum_id} ready "
+              f"({curriculum.total_concepts} concepts, {curriculum.total_questions} exercises)")
+
+        # ── Step 4: AI Diagnostic Questions — runs in background ────────
+        flat_concepts = [
+            {
+                "concept_id": con.id,
+                "name": con.name,
+                "description": con.description,
+                "section_title": sec.title,
+                "difficulty_level": con.difficulty_level,
+                "is_core": con.is_core,
+            }
+            for ch in curriculum.chapters
+            for sec in ch.sections
+            for con in sec.concepts
+        ]
+
+        def _gen_diagnostic_bg(cid: int, title: str, concepts: list, db: str) -> None:
+            try:
+                from src.external_concept_generator import generate_all as _gen_all
+                _gen_all(curriculum_id=cid, book_title=title, concepts=concepts, db_path=db)
+                print(f"[Pipeline] DONE AI diagnostic questions ready for #{cid}")
+            except Exception as ext_err:
+                print(f"[Pipeline] WARNING: External concept generation failed: {ext_err}")
+
+        threading.Thread(
+            target=_gen_diagnostic_bg,
+            args=(curriculum_id, curriculum.book_title, flat_concepts, db_path),
+            daemon=True,
+        ).start()
 
     except Exception as e:
         print(f"[Pipeline] ERROR for curriculum #{curriculum_id}: {e}")

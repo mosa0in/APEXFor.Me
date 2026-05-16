@@ -1,9 +1,9 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Lock, ChevronLeft, CheckCircle2, Sparkles, BookOpen, TrendingUp, Boxes, Play, Target, Award, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { Brain, Lock, ChevronLeft, CheckCircle2, Sparkles, BookOpen, TrendingUp, Boxes, Play, Target, Award, ChevronDown, ChevronUp, Star, CloudUpload, ExternalLink, Layers } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import { useCurriculum } from '../context/CurriculumContext';
-import { fetchCurriculum, getMasterySnapshots, type L1Section, type L1Concept } from '../services/backend';
+import { fetchCurriculum, getMasterySnapshots, getAuthHeader, type L1Section, type L1Concept } from '../services/backend';
 
 // ═══════════════════════════════════════════
 // Types
@@ -15,6 +15,16 @@ interface SectionNode {
   concepts: { id: string; name: string; mastery: number; is_core: boolean }[];
   overallMastery: number; // 0-100
   status: 'locked' | 'active' | 'done';
+}
+
+interface ExtConcept {
+  concept_id: string;
+  name: string;
+  description: string;
+  relation_type: 'prerequisite' | 'related' | 'extension';
+  priority: 1 | 2 | 3;
+  insert_after: string; // internal concept_id
+  question: { question_text: string; question_type: string; difficulty: string };
 }
 
 interface MasterySnap {
@@ -37,14 +47,17 @@ export default function RoadmapPage() {
   const [overallMastery, setOverallMastery] = useState(0);
   const [diagnosticAccuracy, setDiagnosticAccuracy] = useState(0);
   const [sections, setSections] = useState<SectionNode[]>([]);
+  const [extConcepts, setExtConcepts] = useState<ExtConcept[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedExt, setExpandedExt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [starsTotal, setStarsTotal] = useState(0);
 
   useEffect(() => {
     if (!studentId) { navigate('/'); return; }
+    if (currLoading) return; // Wait for context to verify which curricula belong to this user
     loadRoadmap();
-  }, [studentId, activeSlug]);
+  }, [studentId, activeSlug, currLoading]);
 
   async function loadRoadmap() {
     setLoading(true);
@@ -74,7 +87,7 @@ export default function RoadmapPage() {
 
     // Fetch diagnostic accuracy (% correct — distinct from BKT mastery)
     try {
-      const accRes = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/results/${studentId}`);
+      const accRes = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/results/${studentId}`, { headers: getAuthHeader() });
       if (accRes.ok) {
         const accData = await accRes.json();
         setDiagnosticAccuracy(accData.accuracy || 0);
@@ -83,7 +96,7 @@ export default function RoadmapPage() {
 
     // Fetch student profile for stars total
     try {
-      const meRes = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/me/${studentId}`);
+      const meRes = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/me/${studentId}`, { headers: getAuthHeader() });
       if (meRes.ok) {
         const me = await meRes.json();
         setStarsTotal(me.stars_total ?? 0);
@@ -158,6 +171,16 @@ export default function RoadmapPage() {
       console.warn('[Roadmap] Failed to load curriculum:', e);
     }
 
+    // Load external concepts (non-blocking)
+    try {
+      const API = import.meta.env.VITE_API_URL ?? '';
+      const extRes = await fetch(`${API}/api/diagnostic/${activeSlug}/external-concepts`, { headers: getAuthHeader() });
+      if (extRes.ok) {
+        const extData = await extRes.json();
+        setExtConcepts(extData.external_concepts || []);
+      }
+    } catch { /* ignore */ }
+
     setLoading(false);
   }
 
@@ -176,6 +199,26 @@ export default function RoadmapPage() {
             <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
             <p className="text-on-surface-variant">جاري تحميل خارطة الطريق...</p>
           </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!activeSlug || sections.length === 0) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-6">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+            <BookOpen size={36} className="text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-on-surface mb-2">لا يوجد منهج بعد</h2>
+            <p className="text-on-surface-variant max-w-sm">ارفع كتابك الدراسي وسيقوم الذكاء الاصطناعي ببناء خارطة طريقك التعليمية تلقائياً.</p>
+          </div>
+          <button onClick={() => navigate('/upload')} className="btn-primary py-3 px-8 rounded-xl inline-flex items-center gap-2">
+            <CloudUpload size={18} />
+            <span>ارفع منهجاً الآن</span>
+          </button>
         </div>
       </AppShell>
     );
@@ -244,18 +287,38 @@ export default function RoadmapPage() {
             onClick={() => navigate(diagnosticDone ? '/results' : '/diagnostic')}
           />
 
-          {diagnosticDone && (
-            <div className="my-3 insight-card max-w-[320px]">
-              <div className="flex items-center gap-2 justify-end mb-2">
-                <span className="text-sm font-medium text-tertiary">التشخيص مكتمل</span>
-                <Sparkles size={14} className="text-tertiary"/>
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                الدقة: <strong className="text-primary">{diagnosticAccuracy}%</strong> · الإتقان (BKT): <strong className="text-primary">{overallMastery}%</strong>.
-                {totalSections > 0 ? ' الأقسام أدناه مرتبة حسب المنهج — ابدأ من أول قسم نشط.' : ' اختر منهجاً جاهزاً لعرض الأقسام.'}
-              </p>
-            </div>
-          )}
+          {diagnosticDone && (() => {
+            const firstActive = sections.find(s => s.status === 'active');
+            return (
+              <>
+                <div className="my-3 insight-card max-w-[320px]">
+                  <div className="flex items-center gap-2 justify-end mb-2">
+                    <span className="text-sm font-medium text-tertiary">التشخيص مكتمل</span>
+                    <Sparkles size={14} className="text-tertiary"/>
+                  </div>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    الدقة: <strong className="text-primary">{diagnosticAccuracy}%</strong> · الإتقان (BKT): <strong className="text-primary">{overallMastery}%</strong>.
+                    {totalSections > 0 ? ' الأقسام أدناه مرتبة حسب المنهج.' : ' اختر منهجاً جاهزاً لعرض الأقسام.'}
+                  </p>
+                </div>
+                {firstActive && (
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('apex_active_section', firstActive.id);
+                      navigate(`/learn?section=${firstActive.id}&slug=${activeSlug}`);
+                    }}
+                    className="btn-primary mb-2 px-8 py-3 rounded-2xl flex items-center gap-3 text-base shadow-glow"
+                  >
+                    <Play size={18} className="shrink-0" />
+                    <div className="text-right">
+                      <p className="text-sm font-bold leading-tight">ابدأ التعلم</p>
+                      <p className="text-[11px] opacity-70 font-normal leading-tight">{firstActive.title}</p>
+                    </div>
+                  </button>
+                )}
+              </>
+            );
+          })()}
 
           {/* === Section Nodes === */}
           {sections.length === 0 && !diagnosticDone && (
@@ -275,116 +338,304 @@ export default function RoadmapPage() {
             </div>
           )}
 
-          {sections.map((sec, i) => {
-            const isExpanded = expandedSection === sec.id;
-            const isDone = sec.status === 'done';
-            const isActive = sec.status === 'active';
-            const isLocked = sec.status === 'locked';
+          {(() => {
+            let masteredIdx = 0;
+            // Build lookup: concept_id → section_id
+            const conceptToSection: Record<string, string> = {};
+            sections.forEach(sec => sec.concepts.forEach(c => { conceptToSection[c.id] = sec.id; }));
+            // Group external concepts by which section they follow
+            const extBySectionId: Record<string, ExtConcept[]> = {};
+            extConcepts.forEach(ec => {
+              const secId = conceptToSection[ec.insert_after] || '__before__';
+              if (!extBySectionId[secId]) extBySectionId[secId] = [];
+              extBySectionId[secId].push(ec);
+            });
 
-            return (
-              <div key={sec.id} className="flex flex-col items-center w-full max-w-[500px]">
-                {/* Connector line */}
-                <div className={`roadmap-connector ${isDone || isActive ? 'roadmap-connector-active' : ''}`} />
+            const EXT_COLOR: Record<string, string> = {
+              prerequisite: 'text-error border-error/40 bg-error/10',
+              related: 'text-[#ffb869] border-[#ffb869]/40 bg-[#ffb869]/10',
+              extension: 'text-tertiary border-tertiary/40 bg-tertiary/10',
+            };
 
-                {/* Section Card */}
-                <div
-                  onClick={() => {
-                    if (isLocked) return;
-                    setExpandedSection(isExpanded ? null : sec.id);
-                  }}
-                  className={`w-full rounded-2xl border transition-all duration-300 cursor-pointer ${
-                    isDone
-                      ? 'border-tertiary/30 bg-tertiary/5 hover:bg-tertiary/10'
-                      : isActive
-                        ? 'border-primary/30 bg-primary/5 hover:bg-primary/10 shadow-glow'
-                        : 'border-outline-variant/20 bg-surface-container-low/50 opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="p-4 flex items-center gap-3">
-                    {/* Status Icon */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                      isDone ? 'bg-tertiary/20' : isActive ? 'bg-primary/20' : 'bg-surface-container'
-                    }`}>
-                      {isDone
-                        ? <CheckCircle2 size={20} className="text-tertiary" />
-                        : isActive
-                          ? <Play size={18} className="text-primary" />
-                          : <Lock size={16} className="text-on-surface-variant opacity-40" />
-                      }
-                    </div>
+            const EXT_ACCENT: Record<string, { color: string; glow: string; bg: string }> = {
+              prerequisite: { color: '#ffb4ab', glow: 'rgba(255,180,171,0.35)', bg: 'rgba(255,180,171,0.08)' },
+              related:      { color: '#ffb869', glow: 'rgba(255,184,105,0.35)', bg: 'rgba(255,184,105,0.08)' },
+              extension:    { color: '#d0bcff', glow: 'rgba(208,188,255,0.35)', bg: 'rgba(208,188,255,0.08)' },
+            };
 
-                    {/* Title + Mastery */}
-                    <div className="flex-1 text-right">
-                      <p className={`font-medium text-sm ${isLocked ? 'text-on-surface-variant' : 'text-on-surface'}`}>
-                        {sec.title}
-                      </p>
-                      <div className="flex items-center gap-2 justify-end mt-1">
-                        <span className="text-xs text-on-surface-variant">{sec.concepts.length} مفاهيم</span>
-                        {!isLocked && (
-                          <>
-                            <span className="text-xs text-on-surface-variant">•</span>
-                            <span className={`text-xs font-bold ${isDone ? 'text-tertiary' : 'text-primary'}`}>
-                              {sec.overallMastery}%
+            const renderExtConcepts = (secId: string, side: 'left' | 'right') => {
+              const ecs = extBySectionId[secId];
+              if (!ecs || ecs.length === 0) return null;
+              return (
+                <div className="flex flex-col items-center w-full" style={{maxWidth:560}}>
+                  {ecs.map((ec, idx) => {
+                    const isR = (idx % 2 === 0) === (side === 'right');
+                    const isOpen = expandedExt === ec.concept_id;
+                    const accent = EXT_ACCENT[ec.relation_type] || EXT_ACCENT.related;
+                    // Find the section this external concept is anchored to
+                    const targetSecId = conceptToSection[ec.insert_after] || (secId !== '__before__' ? secId : null);
+                    return (
+                      <div key={ec.concept_id} className="flex flex-col items-center w-full">
+                        {/* Short connector from spine */}
+                        <div className="w-[3px] rounded-full mx-auto" style={{height:20, background:`linear-gradient(180deg, ${accent.color}50, ${accent.color}20)`}} />
+                        <div className={`flex items-center w-full gap-0 ${isR ? 'flex-row' : 'flex-row-reverse'}`}>
+                          {/* Spine anchor dot */}
+                          <div className="flex flex-col items-center shrink-0 w-6">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{background: accent.color, boxShadow:`0 0 6px ${accent.glow}`, border:`1.5px solid ${accent.color}`}} />
+                          </div>
+                          {/* Solid horizontal connector */}
+                          <div className="shrink-0" style={{width:28, height:2, background:`linear-gradient(to ${isR?'right':'left'}, ${accent.color}90, ${accent.color}30)`, borderRadius:1}} />
+                          {/* Circle node */}
+                          <div
+                            onClick={() => {
+                              if (targetSecId) {
+                                localStorage.setItem('apex_active_section', targetSecId);
+                                navigate(`/learn?section=${targetSecId}&slug=${activeSlug}&extId=${ec.concept_id}&extName=${encodeURIComponent(ec.name)}&extDesc=${encodeURIComponent(ec.description)}`);
+                              } else {
+                                setExpandedExt(isOpen ? null : ec.concept_id);
+                              }
+                            }}
+                            className="w-14 h-14 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-110 shrink-0"
+                            style={{
+                              background: accent.bg,
+                              border: `2px solid ${accent.color}`,
+                              boxShadow: `0 0 12px ${accent.glow}`,
+                            }}
+                          >
+                            <Layers size={15} style={{color: accent.color}} className="mb-0.5" />
+                            <span className="text-[7px] font-bold text-center leading-tight px-1 line-clamp-2" style={{color: accent.color}}>
+                              {ec.name.split(' ').slice(0,2).join(' ')}
                             </span>
-                          </>
+                          </div>
+                          {/* Info card (only when no section to navigate to) */}
+                          {isOpen && !targetSecId && (
+                            <div className="ml-2 mr-2 rounded-xl p-2.5 text-right" style={{maxWidth:180, animation:'fadeUp 0.2s ease-out', background: accent.bg, border:`1px solid ${accent.color}40`}}>
+                              <p className="text-[10px] font-bold leading-tight mb-1" style={{color: accent.color}}>{ec.name}</p>
+                              <p className="text-[9px] opacity-80 leading-snug line-clamp-3 text-on-surface-variant">{ec.description}</p>
+                            </div>
+                          )}
+                          <div className="flex-1" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            };
+
+            return sections.map((sec) => {
+              const isExpanded = expandedSection === sec.id;
+              const isDone = sec.status === 'done';
+              const isActive = sec.status === 'active';
+              const isLocked = sec.status === 'locked';
+
+              // ── MASTERED → side bubble ────────────────────────────────
+              if (isDone) {
+                const isRight = masteredIdx % 2 === 0;
+                masteredIdx++;
+                return (
+                  <div key={sec.id} className="flex flex-col items-center w-full" style={{maxWidth:560}}>
+                    {renderExtConcepts(sec.id, isRight ? 'left' : 'right')}
+                    {/* Connector (tertiary dashed) */}
+                    <div className="roadmap-connector roadmap-connector-mastered" />
+
+                    {/* Side row */}
+                    <div className={`flex items-center w-full gap-0 ${isRight ? 'flex-row' : 'flex-row-reverse'}`}>
+                      {/* Spine anchor dot */}
+                      <div className="flex flex-col items-center shrink-0 w-6">
+                        <div className="w-2.5 h-2.5 rounded-full bg-tertiary/50 border border-tertiary/30" />
+                      </div>
+
+                      {/* Dashed horizontal connector */}
+                      <div className="h-px w-8 shrink-0" style={{borderTop:'2px dashed rgba(255,184,105,0.5)'}} />
+
+                      {/* Mastered card */}
+                      <div
+                        onClick={() => setExpandedSection(isExpanded ? null : sec.id)}
+                        className="flex-1 rounded-xl border border-tertiary/30 bg-tertiary/5 hover:bg-tertiary/10 cursor-pointer transition-all p-3"
+                        style={{maxWidth:220}}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-tertiary/20 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={14} className="text-tertiary" />
+                          </div>
+                          <div className="flex-1 text-right min-w-0">
+                            <p className="text-[11px] font-semibold text-tertiary leading-tight line-clamp-2">{sec.title}</p>
+                            <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                              <span className="text-[9px] text-on-surface-variant">متقن</span>
+                              <span className="text-[10px] font-bold text-tertiary">{sec.overallMastery}%</span>
+                            </div>
+                          </div>
+                          {isExpanded
+                            ? <ChevronUp size={13} className="text-tertiary shrink-0" />
+                            : <ChevronDown size={13} className="text-tertiary shrink-0" />}
+                        </div>
+
+                        {/* Expanded concepts */}
+                        {isExpanded && (
+                          <div className="mt-2 pt-2 border-t border-tertiary/15 space-y-1" style={{animation:'fadeUp 0.25s ease-out'}}>
+                            {sec.concepts.map(concept => (
+                              <div key={concept.id} className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-tertiary">✓</span>
+                                <span className="flex-1 text-right text-[10px] text-on-surface">{concept.name}</span>
+                                <span className="text-[10px] font-bold text-tertiary">{concept.mastery}%</span>
+                              </div>
+                            ))}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/learn?section=${sec.id}&slug=${activeSlug}`); }}
+                              className="w-full mt-1.5 py-1.5 rounded-lg text-[11px] text-tertiary border border-tertiary/30 hover:bg-tertiary/15 transition-all"
+                            >
+                              تعمق في المحتوى
+                            </button>
+                          </div>
                         )}
                       </div>
+
+                      {/* Spacer on opposite side (keeps spine centered) */}
+                      <div className="flex-1" style={{maxWidth:220}} />
+                    </div>
+                  </div>
+                );
+              }
+
+              // ── NON-MASTERED → main path ──────────────────────────────
+              return (
+                <div key={sec.id} className="flex flex-col items-center w-full max-w-[500px]">
+                  {renderExtConcepts(sec.id, masteredIdx % 2 === 0 ? 'right' : 'left')}
+                  <div className={`roadmap-connector ${isActive ? 'roadmap-connector-active' : ''}`} />
+                  <div
+                    className={`w-full rounded-2xl border transition-all duration-300 ${
+                      isActive
+                        ? 'border-primary/30 bg-primary/5 shadow-glow'
+                        : 'border-outline-variant/20 bg-surface-container-low/50 opacity-50'
+                    }`}
+                  >
+                    <div className="p-4 flex items-center gap-3">
+                      {/* Play button — navigates directly */}
+                      <button
+                        onClick={() => {
+                          if (isLocked) return;
+                          localStorage.setItem('apex_active_section', sec.id);
+                          navigate(`/learn?section=${sec.id}&slug=${activeSlug}`);
+                        }}
+                        disabled={isLocked}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${isActive ? 'bg-primary/20 hover:bg-primary/35 hover:scale-110' : 'bg-surface-container cursor-not-allowed'}`}
+                      >
+                        {isActive
+                          ? <Play size={18} className="text-primary" />
+                          : <Lock size={16} className="text-on-surface-variant opacity-40" />}
+                      </button>
+
+                      {/* Section info — clicking this expands/collapses */}
+                      <div
+                        className={`flex-1 text-right ${isActive ? 'cursor-pointer' : ''}`}
+                        onClick={() => { if (!isLocked) setExpandedSection(isExpanded ? null : sec.id); }}
+                      >
+                        <p className={`font-medium text-sm ${isLocked ? 'text-on-surface-variant' : 'text-on-surface'}`}>{sec.title}</p>
+                        <div className="flex items-center gap-2 justify-end mt-1">
+                          <span className="text-xs text-on-surface-variant">{sec.concepts.length} مفاهيم</span>
+                          {!isLocked && (
+                            <>
+                              <span className="text-xs text-on-surface-variant">•</span>
+                              <span className="text-xs font-bold text-primary">{sec.overallMastery}%</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {!isLocked && (
+                        <div className="w-16 h-1.5 bg-surface-container-high rounded-full overflow-hidden shrink-0">
+                          <div className="h-full bg-primary rounded-full transition-all" style={{width:`${sec.overallMastery}%`}} />
+                        </div>
+                      )}
+
+                      {/* Chevron for expand/collapse */}
+                      {!isLocked && (
+                        <button
+                          onClick={() => setExpandedSection(isExpanded ? null : sec.id)}
+                          className="shrink-0 p-1 rounded-lg hover:bg-primary/10 transition-all"
+                        >
+                          {isExpanded
+                            ? <ChevronUp size={16} className="text-on-surface-variant" />
+                            : <ChevronDown size={16} className="text-on-surface-variant" />}
+                        </button>
+                      )}
                     </div>
 
-                    {/* Mastery bar */}
-                    {!isLocked && (
-                      <div className="w-16 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${isDone ? 'bg-tertiary' : 'bg-primary'}`}
-                          style={{ width: `${sec.overallMastery}%` }}
-                        />
+                    {isExpanded && (
+                      <div className="border-t border-primary/10 p-4 space-y-1" style={{animation:'fadeUp 0.3s ease-out'}}>
+                        {sec.concepts.map(concept => (
+                          <button
+                            key={concept.id}
+                            className="w-full flex items-center gap-2 py-1.5 rounded-lg px-2 hover:bg-primary/5 transition-all cursor-pointer text-right"
+                            onClick={() => {
+                              localStorage.setItem('apex_active_section', sec.id);
+                              navigate(`/learn?section=${sec.id}&slug=${activeSlug}&startConcept=${concept.id}`);
+                            }}
+                          >
+                            <div className="w-12 h-1 bg-surface-container-high rounded-full overflow-hidden shrink-0">
+                              <div className={`h-full rounded-full ${concept.mastery >= 70 ? 'bg-tertiary' : concept.mastery > 0 ? 'bg-[#ffb869]' : 'bg-surface-container'}`} style={{width:`${concept.mastery}%`}} />
+                            </div>
+                            <span className={`text-[10px] font-bold shrink-0 ${concept.mastery >= 70 ? 'text-tertiary' : concept.mastery > 0 ? 'text-[#ffb869]' : 'text-on-surface-variant'}`}>{concept.mastery}%</span>
+                            <span className="flex-1 text-right text-xs text-on-surface">{concept.name}</span>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] shrink-0 ${
+                              concept.mastery >= 70 ? 'bg-tertiary/20 text-tertiary'
+                              : concept.mastery > 0 ? 'bg-[#ffb869]/20 text-[#ffb869]'
+                              : 'bg-surface-container text-on-surface-variant'}`}>
+                              {concept.mastery >= 70 ? '✓' : concept.is_core ? '★' : '·'}
+                            </div>
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => {
+                            localStorage.setItem('apex_active_section', sec.id);
+                            navigate(`/learn?section=${sec.id}&slug=${activeSlug}`);
+                          }}
+                          className="btn-primary w-full py-2.5 rounded-xl mt-3 text-sm"
+                        >
+                          <Play size={15} /><span>ابدأ التعلم</span>
+                        </button>
                       </div>
                     )}
-
-                    {/* Expand chevron */}
-                    {!isLocked && (
-                      isExpanded
-                        ? <ChevronUp size={18} className="text-on-surface-variant" />
-                        : <ChevronDown size={18} className="text-on-surface-variant" />
-                    )}
                   </div>
+                </div>
+              );
+            });
+          })()}
 
-                  {/* Expanded: Show concepts */}
-                  {isExpanded && (
-                    <div className="border-t border-primary/10 p-4 space-y-2" style={{ animation: 'fadeUp 0.3s ease-out' }}>
-                      {sec.concepts.map(concept => (
-                        <div key={concept.id} className="flex items-center gap-2 py-1.5">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
-                            concept.mastery >= 70
-                              ? 'bg-tertiary/20 text-tertiary'
-                              : concept.mastery > 0
-                                ? 'bg-[#ffb869]/20 text-[#ffb869]'
-                                : 'bg-surface-container text-on-surface-variant'
-                          }`}>
-                            {concept.mastery >= 70 ? '✓' : concept.is_core ? '★' : '·'}
-                          </div>
-                          <span className="flex-1 text-right text-xs text-on-surface">{concept.name}</span>
-                          <span className={`text-[10px] font-bold ${
-                            concept.mastery >= 70 ? 'text-tertiary' : concept.mastery > 0 ? 'text-[#ffb869]' : 'text-on-surface-variant'
-                          }`}>{concept.mastery}%</span>
-                          <div className="w-12 h-1 bg-surface-container-high rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${concept.mastery >= 70 ? 'bg-tertiary' : concept.mastery > 0 ? 'bg-[#ffb869]' : 'bg-surface-container'}`}
-                              style={{ width: `${concept.mastery}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      {/* Start Learning Button */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/learn?section=${sec.id}&slug=${activeSlug}`); }}
-                        className="btn-primary w-full py-2.5 rounded-xl mt-3 text-sm"
-                      >
-                        <BookOpen size={16} />
-                        <span>ابدأ التعلم</span>
-                      </button>
-                    </div>
-                  )}
+          {/* External concepts with no insert_after (global prerequisites) */}
+          {extConcepts.filter(ec => !ec.insert_after || ec.insert_after === '').map((ec, idx) => {
+            const isR = idx % 2 === 0;
+            const EXT_ACCENT_MAP: Record<string, { color: string; glow: string; bg: string }> = {
+              prerequisite: { color: '#ffb4ab', glow: 'rgba(255,180,171,0.35)', bg: 'rgba(255,180,171,0.08)' },
+              related:      { color: '#ffb869', glow: 'rgba(255,184,105,0.35)', bg: 'rgba(255,184,105,0.08)' },
+              extension:    { color: '#d0bcff', glow: 'rgba(208,188,255,0.35)', bg: 'rgba(208,188,255,0.08)' },
+            };
+            const accent = EXT_ACCENT_MAP[ec.relation_type] || EXT_ACCENT_MAP.related;
+            const firstSection = sections.find(s => s.status === 'active') || sections[0];
+            return (
+              <div key={ec.concept_id} className="flex flex-col items-center w-full" style={{maxWidth:560}}>
+                <div className={`flex items-center w-full gap-0 ${isR ? 'flex-row' : 'flex-row-reverse'}`}>
+                  <div className="flex flex-col items-center shrink-0 w-6">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{background: accent.color, boxShadow:`0 0 5px ${accent.glow}`}} />
+                  </div>
+                  <div className="shrink-0" style={{width:24, height:2, background:`linear-gradient(to ${isR?'right':'left'}, ${accent.color}80, ${accent.color}20)`, borderRadius:1}} />
+                  <div
+                    onClick={() => {
+                      if (firstSection) {
+                        localStorage.setItem('apex_active_section', firstSection.id);
+                        navigate(`/learn?section=${firstSection.id}&slug=${activeSlug}&extId=${ec.concept_id}&extName=${encodeURIComponent(ec.name)}&extDesc=${encodeURIComponent(ec.description)}`);
+                      }
+                    }}
+                    className="w-14 h-14 rounded-full flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all shrink-0"
+                    style={{ background: accent.bg, border: `2px solid ${accent.color}`, boxShadow: `0 0 12px ${accent.glow}` }}
+                  >
+                    <Layers size={15} style={{color: accent.color}} className="mb-0.5" />
+                    <span className="text-[7px] font-bold text-center leading-tight px-1 line-clamp-2" style={{color: accent.color}}>
+                      {ec.name.split(' ').slice(0,2).join(' ')}
+                    </span>
+                  </div>
+                  <div className="flex-1" />
                 </div>
               </div>
             );
@@ -393,19 +644,41 @@ export default function RoadmapPage() {
 
         {/* CTA */}
         <div className="flex justify-center mt-10 mb-8">
-          <button
-            onClick={() => {
-              if (!activeCurriculum) navigate('/upload');
-              else if (!diagnosticDone) navigate('/diagnostic');
-              else navigate('/results');
-            }}
-            className="btn-primary w-full max-w-[400px] py-3.5 text-lg rounded-xl"
-          >
-            <span>
-              {!activeCurriculum ? 'ارفع مادة' : !diagnosticDone ? 'ابدأ الاختبار الآن' : 'عرض النتائج'}
-            </span>
-            <ChevronLeft size={20}/>
-          </button>
+          {(() => {
+            const firstActive = sections.find(s => s.status === 'active');
+            if (!activeCurriculum) {
+              return (
+                <button onClick={() => navigate('/upload')} className="btn-primary w-full max-w-[400px] py-3.5 text-lg rounded-xl">
+                  <span>ارفع مادة</span><ChevronLeft size={20}/>
+                </button>
+              );
+            }
+            if (!diagnosticDone) {
+              return (
+                <button onClick={() => navigate('/diagnostic')} className="btn-primary w-full max-w-[400px] py-3.5 text-lg rounded-xl">
+                  <span>ابدأ الاختبار الآن</span><ChevronLeft size={20}/>
+                </button>
+              );
+            }
+            if (firstActive) {
+              return (
+                <button
+                  onClick={() => {
+                    localStorage.setItem('apex_active_section', firstActive.id);
+                    navigate(`/learn?section=${firstActive.id}&slug=${activeSlug}`);
+                  }}
+                  className="btn-primary w-full max-w-[400px] py-3.5 text-lg rounded-xl"
+                >
+                  <Play size={20}/><span>ابدأ التعلم</span>
+                </button>
+              );
+            }
+            return (
+              <button onClick={() => navigate('/results')} className="btn-secondary w-full max-w-[400px] py-3.5 text-lg rounded-xl">
+                <span>عرض النتائج</span><ChevronLeft size={20}/>
+              </button>
+            );
+          })()}
         </div>
       </div>
     </AppShell>

@@ -5,12 +5,17 @@
 ## Architecture (5 Layers)
 
 ```
-Layer 1: PDF Extractor   → src/docling_extractor.py (Docling, PDF→Markdown, Zero-AI)
-Layer 2: AI Enricher     → src/ai_enricher.py       (Claude: Markdown→Curriculum JSON)
-Layer 3: Knowledge Graph → src/graph_builder.py     (Neo4j)
-Layer 4: Vector Search   → src/qdrant_store.py      (Hybrid: Dense+BM25+RRF)
-Layer 5: RAG Engine      → src/rag_engine.py        (Multi-LLM)
+Layer 1: PDF Extractor   → src/docling_extractor.py  (Docling, PDF→Markdown, Zero-AI)
+Layer 2: AI Enricher     → src/ai_enricher.py        (Claude: Markdown→Curriculum JSON)
+Layer 3: Knowledge Graph → src/graph_engine.py       (SQLite-native — NO Neo4j required)
+Layer 4: Vector Search   → src/sinkt_embeddings.py   (SQLite FTS5 + cosine — NO Qdrant)
+Layer 5: RAG Engine      → src/rag_engine.py         (Multi-LLM: Claude primary)
 ```
+
+> **Note (2026-05-15):** Layer 3 migrated from Neo4j → SQLite-native (`src/graph_engine.py` — `SQLiteGraphEngine`).
+> Layer 4 migrated from Qdrant → SQLite FTS5 (`src/sinkt_embeddings.py` — `SINKTEmbeddingEngine`).
+> Both external services are still referenced in legacy `src/graph_builder.py` and `src/qdrant_store.py`
+> but are **NOT required** for production operation.
 
 ## Source Files
 
@@ -50,18 +55,47 @@ Layer 5: RAG Engine      → src/rag_engine.py        (Multi-LLM)
 
 ## Infrastructure
 
-| Service | Port | Container |
-|---------|------|-----------|
-| Neo4j Browser | 7474 | apex-neo4j |
-| Neo4j Bolt | 7687 | apex-neo4j |
-| Qdrant REST | 6333 | apex-qdrant |
+| Service | Port | Status | Notes |
+|---------|------|--------|-------|
+| FastAPI Backend | 8000 | **Required** | `uvicorn api.server:app` |
+| SQLite DB | — | **Required** | `api/apex_data.db` (auto-created) |
+| React Frontend | 5173 | Required for UI | `cd frontend && npm run dev` |
+| Neo4j Browser | 7474 | **Legacy / Optional** | Replaced by `src/graph_engine.py` |
+| Neo4j Bolt | 7687 | **Legacy / Optional** | Not needed in production |
+| Qdrant REST | 6333 | **Legacy / Optional** | Replaced by `src/sinkt_embeddings.py` |
+| OpenAI Whisper | cloud | Optional | Set `OPENAI_API_KEY` for voice input |
 
 ## Key Design Decisions
 
-1. Docling-first extraction (IBM Docling: PDF→Markdown, then Claude for semantics)
-2. Hybrid Search: Dense (semantic) + Sparse (BM25) + RRF fusion
-3. Multi-LLM fallback: Gemini → Claude → Ollama
-4. Bilingual support: Arabic + English content via Docling
+1. Docling-first extraction (IBM Docling: PDF→Markdown, then Claude for semantics only)
+2. SQLite-native KG: prerequisite graph in SQLite adjacency table (no Neo4j)
+3. SQLite FTS5 embeddings: SINKT engine, no external vector DB needed
+4. Bilingual: Arabic + English content handled by Docling + Claude
+5. Zero external ML deps: BKT + DKT + HGF + GNN all as manual equations in mastery_tracker.py
+6. CON_EXT: external prerequisite nodes surfaced in curriculum concepts endpoint
+7. response_time_ms: tracked per-interaction for pacing analysis
+
+## Mastery Algorithms (src/mastery_tracker.py)
+
+| Algorithm | Function | Use case |
+|-----------|----------|----------|
+| BKT | `bkt_update()` | Default mastery update after each response |
+| DKT (pyKT-equiv) | `dkt_update()` | Difficulty-aware forgetting gate |
+| HGF (pyhgf-equiv) | `hgf_update()` | Two-level volatility prediction |
+| GNN (DGKT/LPKT-equiv) | `gnn_propagate_mastery()` | Prerequisite graph message passing |
+
+BKT parameters: L0=0.3, T=0.15, G=0.25, S=0.10, Gate=0.75
+GNN denoising rules: hint×0.5, conf4+wrong×1.3, conf≤2+correct×0.3, regen≥3×0.6, graph_mismatch prereq<0.4×0.2
+
+## ID Format (hierarchical, no JOIN needed)
+
+```
+CH_{nn}                    e.g. CH_01
+SEC_{ch}_{nn}              e.g. SEC_01_01
+CON_{ch}_{sec}_{nn}        e.g. CON_01_01_01
+Q_{ch}_{sec}_{con}_{nnn}   e.g. Q_01_01_01_001
+CON_EXT_{SUBJECT}_{nn}     e.g. CON_EXT_ALGEBRA_01  (external prereqs)
+```
 
 ## Commands
 

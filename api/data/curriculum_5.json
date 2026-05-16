@@ -1,0 +1,17 @@
+{
+  "book_title": "Unknown",
+  "authors": [
+    "George B. Thomas Jr."
+  ],
+  "edition": "",
+  "language": "en",
+  "chapters": [
+    {
+      "id": "ch1",
+      "number": 1,
+      "title": "Functions",
+      "summary": "Chapter 1 covers functions, their graphs, transformations, trigonometric functions, exponential functions, and inverse functions with logarithms.",
+      "sections": []
+    }
+  ]
+}

@@ -3,8 +3,8 @@ APEX — MCP Agent Router
 Endpoints: tools schema, execute tool, coach prompt
 """
 
-from fastapi import APIRouter
-from api.utils import DB_PATH
+from fastapi import APIRouter, HTTPException, Depends
+from api.utils import DB_PATH, get_current_student
 from src.mcp_agent import MCPAgent
 
 router = APIRouter(prefix="/api/mcp", tags=["MCP Agent"])
@@ -25,7 +25,9 @@ def api_mcp_execute(data: dict):
 
 
 @router.get("/coach-prompt/{student_id}")
-def api_coach_prompt(student_id: str):
+def api_coach_prompt(student_id: str, current_student: str = Depends(get_current_student)):
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     agent = MCPAgent(DB_PATH)
     prompt = agent.build_system_prompt(student_id)
     return {"system_prompt": prompt, "student_id": student_id}

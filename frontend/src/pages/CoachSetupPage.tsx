@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Brain, Sparkles, ArrowLeft, Check } from 'lucide-react';
+import { getAuthHeader } from '../services/backend';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -19,7 +20,7 @@ const PERSONALITIES = [
     name: 'السقراطي',
     desc: 'يطرح أسئلة تجعلك تفكر — يساعدك تكتشف الحل بنفسك',
     color: 'border-primary/40 bg-primary/5 hover:bg-primary/10',
-    active: 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(111,209,215,0.2)]',
+    active: 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(208,188,255,0.2)]',
   },
   {
     id: 'friendly',
@@ -57,7 +58,7 @@ export default function CoachSetupPage() {
     try {
       const res = await fetch(`${API}/api/students/${studentId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({
           coach_name: coachName.trim(),
           coach_personality_json: { style: personality },

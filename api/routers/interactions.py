@@ -3,11 +3,11 @@ APEX — Interactions Router
 Endpoints: submit interaction, get interactions
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 
-from api.utils import get_db
+from api.utils import get_db, get_current_student
 
 router = APIRouter(prefix="/api/interactions", tags=["Interactions"])
 
@@ -38,6 +38,7 @@ class InteractionRequest(BaseModel):
     coach_interaction_type: str = ""
     session_end_type: str = ""
     mastery_gate_passed: bool = False
+    response_time_ms: int = 0
 
 
 # ═══════════════════════════════════════════
@@ -45,8 +46,9 @@ class InteractionRequest(BaseModel):
 # ═══════════════════════════════════════════
 
 @router.post("")
-def submit_interaction(data: InteractionRequest):
+def submit_interaction(data: InteractionRequest, current_student: str = Depends(get_current_student)):
     """Record a single student interaction."""
+    data.student_id = current_student  # Override with token identity — never trust request body
     with get_db() as conn:
         conn.execute("""
             INSERT INTO interactions
@@ -55,8 +57,9 @@ def submit_interaction(data: InteractionRequest):
              hint_used, explanation_viewed, student_explanation,
              input_modality, question_pattern, question_regenerated,
              regeneration_reason, rest_requested, coach_called,
-             coach_interaction_type, session_end_type, mastery_gate_passed)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             coach_interaction_type, session_end_type, mastery_gate_passed,
+             response_time_ms)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             data.student_id, data.question_id, data.concept_id, data.session_id,
             data.session_type, int(data.correct), data.attempt_number,
@@ -66,7 +69,7 @@ def submit_interaction(data: InteractionRequest):
             data.question_regenerated, data.regeneration_reason,
             int(data.rest_requested), int(data.coach_called),
             data.coach_interaction_type, data.session_end_type,
-            int(data.mastery_gate_passed),
+            int(data.mastery_gate_passed), data.response_time_ms,
         ))
         iid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.commit()
@@ -74,7 +77,9 @@ def submit_interaction(data: InteractionRequest):
 
 
 @router.get("/{student_id}")
-def get_interactions(student_id: str, session_id: Optional[str] = None, limit: int = 100):
+def get_interactions(student_id: str, session_id: Optional[str] = None, limit: int = 100, current_student: str = Depends(get_current_student)):
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     """Get interactions for a student, optionally filtered by session."""
     with get_db() as conn:
         if session_id:

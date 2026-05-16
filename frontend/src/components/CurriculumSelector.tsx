@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronDown, Plus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, Plus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useCurriculum, type CurriculumItem } from '../context/CurriculumContext';
 
 export default function CurriculumSelector() {
@@ -9,7 +9,21 @@ export default function CurriculumSelector() {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close on outside click
+  const handleSwitch = (item: CurriculumItem) => {
+    if (item.status !== 'ready') return;
+    const currentSlug = activeCurriculum?.slug;
+    if (currentSlug) {
+      const cur = localStorage.getItem('apex_active_section');
+      if (cur) localStorage.setItem(`apex_draft_${currentSlug}`, cur);
+    }
+    switchCurriculum(item.slug);
+    setOpen(false);
+    const draft = localStorage.getItem(`apex_draft_${item.slug}`);
+    if (draft) localStorage.setItem('apex_active_section', draft);
+    else localStorage.removeItem('apex_active_section');
+    navigate('/roadmap');
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -18,117 +32,142 @@ export default function CurriculumSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const statusIcon = (item: CurriculumItem) => {
-    if (item.status === 'ready') return <CheckCircle2 size={14} className="text-emerald-400" />;
-    if (item.status === 'error') return <AlertCircle size={14} className="text-red-400" />;
-    return <Loader2 size={14} className="text-cyan-300 animate-spin" />;
-  };
-
-  const statusLabel = (s: string) => {
-    const map: Record<string, string> = {
-      processing: 'جاري التحليل...',
-      analyzing_pdf: 'تحليل PDF...',
-      enriching: 'إثراء بالذكاء الاصطناعي...',
-      storing: 'حفظ البيانات...',
-      ready: 'جاهز',
-      error: 'خطأ',
-    };
-    return map[s] || s;
-  };
+  const readyCurricula = curricula.filter(c => c.status === 'ready');
+  const pendingCurricula = curricula.filter(c => c.status !== 'ready' && c.status !== 'error');
 
   if (curricula.length === 0) {
     return (
       <button
         onClick={() => navigate('/upload')}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all"
-        style={{ background: 'rgba(140,237,243,0.1)', border: '1px solid rgba(140,237,243,0.2)' }}
+        style={{ background: 'rgba(208,188,255,0.1)', border: '1px solid rgba(208,188,255,0.2)' }}
       >
-        <Plus size={14} className="text-cyan-300" />
-        <span className="text-cyan-200">رفع مادة</span>
+        <Plus size={14} className="text-primary" />
+        <span className="text-on-surface">رفع مادة</span>
       </button>
     );
   }
 
+  // Abbreviate name for icon label (first 2 words)
+  const abbrev = (name: string) => name.split(/\s+/).slice(0, 2).join(' ');
+
   return (
     <div ref={ref} className="relative">
-      {/* Trigger Button */}
+      {/* Trigger pill */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-white/10"
-        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all"
+        style={{
+          background: open ? 'rgba(208,188,255,0.12)' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${open ? 'rgba(208,188,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+        }}
       >
-        <BookOpen size={14} className="text-cyan-300" />
-        <span className="max-w-[180px] truncate text-[#e7e0ed] font-medium">
+        <BookOpen size={14} className="text-primary shrink-0" />
+        <span className="max-w-[130px] truncate text-[#e7e0ed] font-medium text-sm">
           {activeCurriculum?.name || 'اختر مادة'}
         </span>
-        <ChevronDown size={14} className={`text-[#bdc9c9] transition-transform ${open ? 'rotate-180' : ''}`} />
+        {curricula.length > 1 && (
+          <span className="text-[10px] font-bold text-primary bg-primary/15 rounded-full w-4 h-4 flex items-center justify-center shrink-0">
+            {curricula.length}
+          </span>
+        )}
       </button>
 
-      {/* Dropdown */}
+      {/* iOS-folder-style popup */}
       {open && (
         <div
-          className="absolute top-full mt-2 right-0 w-72 rounded-xl overflow-hidden shadow-2xl z-50"
+          className="absolute top-full mt-2 right-0 z-50 rounded-2xl overflow-hidden shadow-2xl"
           style={{
-            background: 'rgba(21,18,27,0.98)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            backdropFilter: 'blur(20px)',
+            width: 220,
+            background: 'rgba(16,13,22,0.96)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
           }}
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-            <p className="text-xs text-[#958ea0] font-medium">المواد الدراسية</p>
+          <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
+            <span className="text-[9px] text-[#5e5668] font-semibold tracking-widest uppercase">
+              {readyCurricula.length}
+            </span>
+            <span className="text-[11px] font-semibold text-[#c8c0d4]">المواد الدراسية</span>
           </div>
 
-          {/* Items */}
-          <div className="max-h-64 overflow-y-auto">
-            {curricula.map(item => (
-              <button
-                key={item.slug}
-                onClick={() => {
-                  if (item.status === 'ready') {
-                    switchCurriculum(item.slug);
-                    setOpen(false);
-                  }
-                }}
-                disabled={item.status !== 'ready'}
-                className={`w-full px-4 py-3 flex items-center gap-3 justify-between text-right transition-all ${
-                  item.slug === activeCurriculum?.slug
-                    ? 'bg-cyan-500/10'
-                    : item.status === 'ready'
-                      ? 'hover:bg-white/5'
-                      : 'opacity-60 cursor-not-allowed'
-                }`}
-                style={{
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  {statusIcon(item)}
-                  {item.status !== 'ready' && (
-                    <span className="text-[10px] text-[#958ea0]">{statusLabel(item.status)}</span>
-                  )}
-                </div>
-                <div className="flex-1 text-right min-w-0">
-                  <p className={`text-sm font-medium truncate ${
-                    item.slug === activeCurriculum?.slug ? 'text-cyan-300' : 'text-[#e7e0ed]'
-                  }`}>
-                    {item.name}
-                  </p>
-                  <p className="text-[10px] text-[#958ea0]">
-                    {item.total_concepts > 0 ? `${item.total_concepts} مفهوم · ${item.total_exercises} تمرين` : '—'}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Ready curricula — iOS app-icon grid */}
+          {readyCurricula.length > 0 && (
+            <div
+              className="px-3 pb-2.5"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: readyCurricula.length === 1 ? '1fr 1fr' : 'repeat(3, 1fr)',
+                gap: '10px',
+              }}
+            >
+              {readyCurricula.map(item => {
+                const isActive = item.slug === activeCurriculum?.slug;
+                return (
+                  <button
+                    key={item.slug}
+                    onClick={() => handleSwitch(item)}
+                    className="flex flex-col items-center gap-1.5 relative group"
+                  >
+                    {/* App icon */}
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative ${
+                        isActive ? 'ring-2 ring-primary/60' : 'group-hover:scale-105'
+                      }`}
+                      style={{
+                        background: isActive
+                          ? 'linear-gradient(135deg, rgba(208,188,255,0.25) 0%, rgba(173,198,255,0.2) 100%)'
+                          : 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)',
+                        border: isActive ? '1px solid rgba(208,188,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <BookOpen size={18} className={isActive ? 'text-primary' : 'text-[#9aa5a5]'} />
+                      {isActive && (
+                        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+                          <CheckCircle2 size={9} className="text-[#0d0b14]" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Label */}
+                    <span
+                      className={`text-[9px] text-center leading-tight line-clamp-2 w-full px-0.5 ${
+                        isActive ? 'text-primary font-semibold' : 'text-[#9aa5a5]'
+                      }`}
+                    >
+                      {abbrev(item.name)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Add New */}
+          {/* Processing */}
+          {pendingCurricula.length > 0 && (
+            <>
+              <div className="px-3.5 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <span className="text-[9px] text-[#5e5668] font-semibold tracking-widest uppercase">قيد التحليل</span>
+              </div>
+              <div className="px-3 pb-2 space-y-1">
+                {pendingCurricula.map(item => (
+                  <div key={item.slug} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <Loader2 size={11} className="text-primary animate-spin shrink-0" />
+                    <p className="text-[10px] text-[#7a7285] truncate flex-1 text-right">{item.name}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Add new */}
           <button
             onClick={() => { setOpen(false); navigate('/upload'); }}
-            className="w-full px-4 py-3 flex items-center gap-2 justify-center text-sm text-cyan-300 hover:bg-cyan-500/10 transition-all"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+            className="w-full flex items-center gap-2 justify-center py-2.5 text-[12px] text-primary transition-all hover:bg-primary/8"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
           >
-            <Plus size={14} />
+            <Plus size={13} />
             <span>رفع مادة جديدة</span>
           </button>
         </div>

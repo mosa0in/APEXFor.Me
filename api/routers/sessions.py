@@ -4,9 +4,9 @@ The core intelligence pipeline: Denoising → BKT → Mindset → Store
 """
 
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
-from api.utils import get_db
+from api.utils import get_db, get_current_student
 from src.denoising_engine import compute_weighted_correct, classify_confidence_answer
 from src.mastery_tracker import bkt_update, check_mastery_gate, get_mastery_level, L0
 from src.mindset_analyzer import analyze_mindset_gap
@@ -15,12 +15,12 @@ router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
 
 @router.post("")
-def submit_session(data: dict):
+def submit_session(data: dict, current_student: str = Depends(get_current_student)):
     """
     Receive a complete diagnostic session from the frontend.
     Pipeline: Insert interactions → Denoising → BKT Update → Mindset Analysis → Store mastery.
     """
-    student_id = data.get("studentId", "")
+    student_id = current_student  # Always use token identity — never trust request body
     session_id = data.get("sessionId", "")
     responses = data.get("responses", [])
 
@@ -49,6 +49,9 @@ def submit_session(data: dict):
             explanation_viewed = bool(r.get("usedSolution", False))
             rephrase_count = r.get("rephraseCount", 0)
             coach_used = bool(r.get("coachUsed", False))
+            rest_requested = bool(r.get("restRequested", False))
+            response_time_ms = int(r.get("timeSpentMs", r.get("responseTimeMs", r.get("response_time_ms", 0))))
+            break_duration_ms = int(r.get("breakDurationMs", 0))
 
             # Step 1: Denoising
             prereq_mastery = existing_mastery.get(concept_id)
@@ -82,14 +85,15 @@ def submit_session(data: dict):
                      hint_used, explanation_viewed, student_explanation,
                      input_modality, question_pattern, question_regenerated,
                      regeneration_reason, rest_requested, coach_called,
-                     coach_interaction_type, session_end_type, mastery_gate_passed)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     coach_interaction_type, session_end_type, mastery_gate_passed,
+                     response_time_ms, break_duration_ms)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (student_id, str(r.get("questionId", "")), concept_id, session_id,
                       "diagnostic", int(correct), 1, 0, confidence,
                       int(hint_used), int(explanation_viewed), reflection,
                       r.get("inputModality", "keyboard"), "MCQ", rephrase_count,
-                      "", 0, int(coach_used), ca_class, mindset.get("gap_type", ""),
-                      int(gate_passed)))
+                      "", int(rest_requested), int(coach_used), ca_class, mindset.get("gap_type", ""),
+                      int(gate_passed), response_time_ms, break_duration_ms))
                 inserted += 1
             except Exception as e:
                 print(f"[Sessions] Error inserting interaction: {e}")

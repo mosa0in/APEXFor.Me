@@ -12,40 +12,83 @@ export const MAX_REPHRASE_PER_QUESTION = 3;
 // Static fallback questions (only used when no curriculum is active)
 const staticFallbackQuestions: Question[] = [...questionsL1, ...prerequisiteQuestions];
 
+function _authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('apex_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function _mapQuestions(rawList: any[]): Question[] {
+  return rawList.map((q: any) => ({
+    id: q.id,
+    text: q.text,
+    conceptId: q.conceptId,
+    concept: q.concept,
+    questionType: q.questionType || 'mcq',
+    sectionType: q.sectionType || 'main',
+    difficulty: q.difficulty,
+    options: q.options,
+    correctIndex: q.correctIndex,
+    correctAnswer: q.correctAnswer || '',
+    rephrasedText: undefined,
+    hint: q.answerHint ? { text: q.answerHint, stepLabel: 'تلميح:', stepContent: q.answerHint } : undefined,
+    solution: q.correctAnswer ? {
+      steps: [{ number: 1, title: 'الإجابة الصحيحة', desc: q.answerHint || '', math: '', result: q.correctAnswer }],
+      tip: '',
+    } : undefined,
+    simplerExample: undefined,
+    errorExample: undefined,
+  }));
+}
+
 /**
- * Load diagnostic questions from the backend API for a specific curriculum.
- * Falls back to static questions if API is unavailable.
+ * Load diagnostic questions — tries AI endpoint (30 Qs) first, falls back to
+ * legacy curriculum questions, then static fallback.
  */
 async function loadQuestionsFromAPI(slug: string): Promise<Question[]> {
   const API = import.meta.env.VITE_API_URL ?? '';
-  try {
-    const res = await fetch(`${API}/api/curricula/${slug}/diagnostic-questions`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const apiQuestions: Question[] = (data.questions || []).map((q: any) => ({
-      id: q.id,
-      text: q.text,
-      conceptId: q.conceptId,
-      concept: q.concept,
-      questionType: q.questionType || 'mcq',
-      sectionType: q.sectionType || 'main',
-      difficulty: q.difficulty,
-      options: q.options,
-      correctIndex: q.correctIndex,
-      correctAnswer: q.correctAnswer || '',
-      // These are optional — API questions don't have them
-      rephrasedText: undefined,
-      hint: undefined,
-      solution: undefined,
-      simplerExample: undefined,
-      errorExample: undefined,
-    }));
-    console.log(`[APEX] Loaded ${apiQuestions.length} diagnostic questions from API (${slug})`);
-    return apiQuestions;
-  } catch (e) {
-    console.warn('[APEX] Failed to load questions from API, using static fallback:', e);
-    return staticFallbackQuestions;
+  const headers = _authHeaders();
+
+  // 0. Learn-mode: use injected concept test questions (only when apex_learn_return is set)
+  const learnReturn = localStorage.getItem('apex_learn_return');
+  const learnQs = localStorage.getItem('apex_learn_questions');
+  if (learnReturn && learnQs) {
+    try {
+      const qs = JSON.parse(learnQs);
+      if (Array.isArray(qs) && qs.length > 0) {
+        console.log(`[APEX] Learn mode: loaded ${qs.length} injected concept questions`);
+        return qs;
+      }
+    } catch { /* fall through */ }
   }
+
+  // 1. Try new AI diagnostic endpoint (30 questions: 15 internal + 15 external)
+  try {
+    const res = await fetch(`${API}/api/diagnostic/${slug}`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      const qs = _mapQuestions(data.questions || []);
+      if (qs.length > 0) {
+        console.log(`[APEX] Loaded ${qs.length} AI diagnostic questions (${slug})`);
+        return qs;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // 2. Fall back to legacy curriculum questions
+  try {
+    const res = await fetch(`${API}/api/curricula/${slug}/diagnostic-questions`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      const qs = _mapQuestions(data.questions || []);
+      if (qs.length > 0) {
+        console.log(`[APEX] Loaded ${qs.length} legacy diagnostic questions (${slug})`);
+        return qs;
+      }
+    }
+  } catch { /* fall through */ }
+
+  console.warn('[APEX] Failed to load questions from API, using static fallback');
+  return staticFallbackQuestions;
 }
 
 function generateSessionId(studentId: string): string {
@@ -65,14 +108,17 @@ export interface QuestionResponse {
   selectedAnswer: string;
   selectedIndex: number;
   isCorrect: boolean;
+  usedSolution: boolean;
   confidence: number;
   difficulty: number;
   reflection: string;
   timeSpent: number;
+  breakDurationMs: number;
   usedHint: boolean;
   usedCoach: boolean;
   coachHelpType: string | null;
   usedRephrase: boolean;
+  rephraseLevel: number;
   regenerationReason: string | null;
   restRequested: boolean;
   inputModality: 'mouse' | 'keyboard';
@@ -97,11 +143,16 @@ interface SessionState {
   currentRegenerationReason: string | null;
   currentRestRequested: boolean;
   currentRephraseCount: number;
+  currentRephraseHint: string | null;
+  currentRephraseStyleLabel: string | null;
   currentInputModality: 'mouse' | 'keyboard';
   toastMessage: string | null;
   toastType: 'success' | 'error' | 'info';
   aiCoachResponse: string | null;
   aiLoading: boolean;
+  breakActive: boolean;
+  currentBreakDurationMs: number;
+  currentBreakStart: number | null;
 }
 
 type SessionAction =
@@ -111,9 +162,11 @@ type SessionAction =
   | { type: 'SET_FEEDBACK_LEVEL'; level: 'easy' | 'medium' | 'hard' }
   | { type: 'MARK_HINT_USED' }
   | { type: 'MARK_COACH_USED'; helpType: string }
-  | { type: 'MARK_REPHRASE_USED'; aiText?: string; reason?: string }
+  | { type: 'MARK_REPHRASE_USED'; aiText?: string; hint?: string; styleLabel?: string; reason?: string }
   | { type: 'TOGGLE_REPHRASE' }
   | { type: 'MARK_REST_REQUESTED' }
+  | { type: 'BREAK_START' }
+  | { type: 'BREAK_END' }
   | { type: 'SET_INPUT_MODALITY'; modality: 'mouse' | 'keyboard' }
   | { type: 'RESET_SESSION' }
   | { type: 'SHOW_TOAST'; message: string; toastType: 'success' | 'error' | 'info' }
@@ -141,11 +194,16 @@ const initialState: SessionState = {
   currentRegenerationReason: null,
   currentRestRequested: false,
   currentRephraseCount: 0,
+  currentRephraseHint: null,
+  currentRephraseStyleLabel: null,
   currentInputModality: 'mouse',
   toastMessage: null,
   toastType: 'info',
   aiCoachResponse: null,
   aiLoading: false,
+  breakActive: false,
+  currentBreakDurationMs: 0,
+  currentBreakStart: null,
 };
 
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
@@ -155,7 +213,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     case 'SUBMIT_RESPONSE':
       return { ...state, responses: [...state.responses, action.response] };
     case 'NEXT_QUESTION':
-      return { ...state, currentQuestionIndex: state.currentQuestionIndex + 1, showRephrasedText: false, rephrasedAIText: null, currentUsedHint: false, currentUsedCoach: false, currentCoachHelpType: null, currentUsedRephrase: false, currentRegenerationReason: null, currentRestRequested: false, currentRephraseCount: 0, currentInputModality: 'mouse', aiCoachResponse: null };
+      return { ...state, currentQuestionIndex: state.currentQuestionIndex + 1, showRephrasedText: false, rephrasedAIText: null, currentRephraseHint: null, currentRephraseStyleLabel: null, currentUsedHint: false, currentUsedCoach: false, currentCoachHelpType: null, currentUsedRephrase: false, currentRegenerationReason: null, currentRestRequested: false, currentRephraseCount: 0, currentInputModality: 'mouse', aiCoachResponse: null, breakActive: false, currentBreakDurationMs: 0, currentBreakStart: null };
     case 'SET_FEEDBACK_LEVEL':
       return { ...state, feedbackLevel: action.level };
     case 'MARK_HINT_USED':
@@ -163,7 +221,13 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     case 'MARK_COACH_USED':
       return { ...state, currentUsedCoach: true, currentCoachHelpType: action.helpType };
     case 'MARK_REPHRASE_USED':
-      return { ...state, currentUsedRephrase: true, showRephrasedText: true, rephrasedAIText: action.aiText || null, currentRegenerationReason: action.reason || null, currentRephraseCount: state.currentRephraseCount + 1 };
+      return { ...state, currentUsedRephrase: true, showRephrasedText: true, rephrasedAIText: action.aiText || null, currentRephraseHint: action.hint || null, currentRephraseStyleLabel: action.styleLabel || null, currentRegenerationReason: action.reason || null, currentRephraseCount: state.currentRephraseCount + 1 };
+    case 'BREAK_START':
+      return { ...state, breakActive: true, currentBreakStart: Date.now() };
+    case 'BREAK_END': {
+      const breakElapsed = state.currentBreakStart ? Date.now() - state.currentBreakStart : 0;
+      return { ...state, breakActive: false, currentBreakStart: null, currentBreakDurationMs: state.currentBreakDurationMs + breakElapsed };
+    }
     case 'TOGGLE_REPHRASE':
       return { ...state, showRephrasedText: !state.showRephrasedText };
     case 'MARK_REST_REQUESTED':
@@ -213,7 +277,9 @@ interface SessionContextValue {
   setFeedbackLevel: (level: 'easy' | 'medium' | 'hard') => void;
   markHintUsed: () => void;
   markCoachUsed: (helpType: string) => void;
-  markRephraseUsed: (aiText?: string, reason?: string) => void;
+  markRephraseUsed: (aiText?: string, hint?: string, styleLabel?: string, reason?: string) => void;
+  startBreak: () => void;
+  endBreak: () => void;
   toggleRephrase: () => void;
   markRestRequested: () => void;
   setInputModality: (modality: 'mouse' | 'keyboard') => void;
@@ -296,6 +362,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.isActive, state.studentId]);
 
+  // Reload questions when curriculum switches
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const slug = (e as CustomEvent<{ slug: string }>).detail.slug;
+      if (slug) {
+        setQuestionsLoading(true);
+        loadQuestionsFromAPI(slug).then(qs => {
+          setQuestions(qs);
+          setQuestionsLoading(false);
+        });
+      }
+    };
+    window.addEventListener('apex:curriculum-switch', handler);
+    return () => window.removeEventListener('apex:curriculum-switch', handler);
+  }, []);
+
   const totalQuestions = questions.length;
   const currentQuestion = state.currentQuestionIndex < totalQuestions ? questions[state.currentQuestionIndex] : null;
   const isLastQuestion = state.currentQuestionIndex >= totalQuestions - 1;
@@ -306,11 +388,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     questionStartTimeRef.current = Date.now();
   }, []);
 
-  const submitResponse = useCallback((data: { selectedAnswer: string; selectedIndex: number; isCorrect: boolean; confidence: number; difficulty: number; reflection: string }) => {
-    // *** FIX: Read from ref, never stale ***
-    const timeSpent = Date.now() - questionStartTimeRef.current;
+  const submitResponse = useCallback((data: { selectedAnswer: string; selectedIndex: number; isCorrect: boolean; usedSolution?: boolean; confidence: number; difficulty: number; reflection: string }) => {
+    const rawTime = Date.now() - questionStartTimeRef.current;
+    const timeSpent = Math.max(0, rawTime - state.currentBreakDurationMs);
     const q = currentQuestion;
-    console.log(`[APEX Timer] Question answered in ${timeSpent}ms (started: ${questionStartTimeRef.current}, now: ${Date.now()})`);
+    console.log(`[APEX Timer] Q answered in ${timeSpent}ms (raw: ${rawTime}ms, break: ${state.currentBreakDurationMs}ms)`);
     dispatch({ type: 'SUBMIT_RESPONSE', response: {
       sessionId: state.sessionId,
       questionId: q?.id ?? 0,
@@ -319,17 +401,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       sectionType: q?.sectionType ?? 'prerequisite',
       questionType: 'MCQ',
       ...data,
+      usedSolution: data.usedSolution ?? false,
       timeSpent,
+      breakDurationMs: state.currentBreakDurationMs,
       usedHint: state.currentUsedHint,
       usedCoach: state.currentUsedCoach,
       coachHelpType: state.currentCoachHelpType,
       usedRephrase: state.currentUsedRephrase,
+      rephraseLevel: state.currentRephraseCount,
       regenerationReason: state.currentRegenerationReason,
       restRequested: state.currentRestRequested,
       inputModality: state.currentInputModality,
       timestamp: new Date().toISOString(),
     }});
-  }, [state.sessionId, state.currentUsedHint, state.currentUsedCoach, state.currentCoachHelpType, state.currentUsedRephrase, state.currentRegenerationReason, state.currentRestRequested, state.currentInputModality, currentQuestion]);
+  }, [state.sessionId, state.currentUsedHint, state.currentUsedCoach, state.currentCoachHelpType, state.currentUsedRephrase, state.currentRegenerationReason, state.currentRestRequested, state.currentInputModality, state.currentBreakDurationMs, currentQuestion]);
 
   const nextQuestion = useCallback(() => {
     dispatch({ type: 'NEXT_QUESTION' });
@@ -339,7 +424,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const setFeedbackLevel = useCallback((level: 'easy' | 'medium' | 'hard') => dispatch({ type: 'SET_FEEDBACK_LEVEL', level }), []);
   const markHintUsed = useCallback(() => dispatch({ type: 'MARK_HINT_USED' }), []);
   const markCoachUsed = useCallback((helpType: string) => dispatch({ type: 'MARK_COACH_USED', helpType }), []);
-  const markRephraseUsed = useCallback((aiText?: string, reason?: string) => dispatch({ type: 'MARK_REPHRASE_USED', aiText, reason }), []);
+  const markRephraseUsed = useCallback((aiText?: string, hint?: string, styleLabel?: string, reason?: string) => dispatch({ type: 'MARK_REPHRASE_USED', aiText, hint, styleLabel, reason }), []);
+  const startBreak = useCallback(() => dispatch({ type: 'BREAK_START' }), []);
+  const endBreak = useCallback(() => dispatch({ type: 'BREAK_END' }), []);
   const toggleRephrase = useCallback(() => dispatch({ type: 'TOGGLE_REPHRASE' }), []);
   const markRestRequested = useCallback(() => dispatch({ type: 'MARK_REST_REQUESTED' }), []);
   const setInputModality = useCallback((modality: 'mouse' | 'keyboard') => dispatch({ type: 'SET_INPUT_MODALITY', modality }), []);
@@ -422,7 +509,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [state.responses, state.studentId, getSessionSummary, showToast]);
 
   return (
-    <SessionContext.Provider value={{ state, questions, questionsLoading, totalQuestions, currentQuestion, isLastQuestion, isCheckpoint, startSession, submitResponse, nextQuestion, setFeedbackLevel, markHintUsed, markCoachUsed, markRephraseUsed, toggleRephrase, markRestRequested, setInputModality, resetSession, showToast, hideToast, getSessionSummary, exportData, setAICoachResponse, setAILoading, setRephrasedAIText, dispatch }}>
+    <SessionContext.Provider value={{ state, questions, questionsLoading, totalQuestions, currentQuestion, isLastQuestion, isCheckpoint, startSession, submitResponse, nextQuestion, setFeedbackLevel, markHintUsed, markCoachUsed, markRephraseUsed, toggleRephrase, markRestRequested, startBreak, endBreak, setInputModality, resetSession, showToast, hideToast, getSessionSummary, exportData, setAICoachResponse, setAILoading, setRephrasedAIText, dispatch }}>
       {children}
     </SessionContext.Provider>
   );

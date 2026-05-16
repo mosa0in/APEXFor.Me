@@ -89,6 +89,141 @@ def get_mastery_level(mastery: float) -> str:
         return 'beginner'
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# DKT-style Update (pyKT equivalent — manual equations, no external ML deps)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def dkt_update(
+    hidden_state: float,
+    weighted_correct: float,
+    concept_difficulty: float = 0.5,
+    interaction_weight: float = 1.0,
+) -> float:
+    """
+    Deep Knowledge Tracing approximation using logistic update (DKT/AKT style).
+
+    Equations (DKT simplified for scalar state):
+      input    = weighted_correct × interaction_weight
+      forget   = sigmoid(-concept_difficulty × 2)          # harder = slower learning
+      input_g  = sigmoid(input - 0.5)                       # gate: was it a real signal?
+      h_new    = forget × hidden_state + (1 - forget) × input_g
+      p_know   = sigmoid(h_new × 4 - 2)                     # scale to 0-1 range
+
+    Advantage over BKT: captures forgetting + difficulty-weighted gating.
+    """
+    import math
+
+    def sigmoid(x: float) -> float:
+        return 1.0 / (1.0 + math.exp(-max(-500.0, min(500.0, x))))
+
+    forget_gate = sigmoid(-concept_difficulty * 2.0)
+    input_gate = sigmoid((weighted_correct * interaction_weight) - 0.5)
+    h_new = forget_gate * hidden_state + (1.0 - forget_gate) * input_gate
+    p_know = sigmoid(h_new * 4.0 - 2.0)
+    return max(0.0, min(1.0, p_know))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# pyhgf / Hierarchical Gaussian Filter — Predictive Coding approximation
+# ═══════════════════════════════════════════════════════════════════════════
+
+def hgf_update(
+    mu1: float,
+    pi1: float,
+    mu2: float,
+    pi2: float,
+    observation: float,
+    kappa: float = 1.0,
+    omega: float = -4.0,
+) -> tuple[float, float, float, float]:
+    """
+    Two-level Hierarchical Gaussian Filter update (pyhgf default equations).
+
+    Level 1: fast-changing belief (mastery estimate)
+    Level 2: slow-changing volatility (learning rate)
+
+    Equations (Mathys et al. 2011):
+      pi1_hat = 1 / (1/pi1 + exp(kappa * mu2 + omega))
+      delta1  = observation - sigmoid(mu1)
+      pi1_new = pi1_hat + 1                    # precision increases with evidence
+      mu1_new = mu1 + delta1 / pi1_new
+
+      pi2_hat = 1 / (1/pi2 + exp(omega))
+      delta2  = (1/pi1_hat + (delta1**2 - 1/pi1_hat)) * kappa**2/2 * pi2/pi1_hat
+      pi2_new = pi2_hat + kappa**2/2 * pi2/pi1_hat * (pi2/pi1_hat - delta2)
+      mu2_new = mu2 + kappa/2 * pi2_hat/pi1_hat * delta1**2
+
+    Returns:
+        (mu1_new, pi1_new, mu2_new, pi2_new) — updated beliefs + precisions
+    """
+    import math
+
+    def sigmoid(x: float) -> float:
+        return 1.0 / (1.0 + math.exp(-max(-500.0, min(500.0, x))))
+
+    # Level 1 update
+    pi1_hat = 1.0 / (1.0 / max(pi1, 1e-6) + math.exp(kappa * mu2 + omega))
+    delta1 = observation - sigmoid(mu1)
+    pi1_new = pi1_hat + 1.0
+    mu1_new = mu1 + delta1 / max(pi1_new, 1e-6)
+
+    # Level 2 update
+    pi2_hat = 1.0 / (1.0 / max(pi2, 1e-6) + math.exp(omega))
+    w2 = kappa ** 2 / 2.0 * (pi2 / max(pi1_hat, 1e-6))
+    delta2 = w2 * ((1.0 / max(pi1_hat, 1e-6) + delta1 ** 2) * pi1_hat - 1.0)
+    pi2_new = max(1e-6, pi2_hat + w2 * (w2 - delta2))
+    mu2_new = mu2 + kappa / 2.0 * (pi2_hat / max(pi1_hat, 1e-6)) * delta1 ** 2
+
+    return (
+        max(0.0, min(1.0, sigmoid(mu1_new))),
+        max(1e-6, pi1_new),
+        mu2_new,
+        max(1e-6, pi2_new),
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GNN-enhanced mastery (DGKT / LPKT-style prerequisite propagation)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def gnn_propagate_mastery(
+    concept_mastery: Dict[str, float],
+    prereq_edges: list[tuple[str, str]],
+    dampening: float = 0.3,
+    iterations: int = 2,
+) -> Dict[str, float]:
+    """
+    Graph Neural Network-style mastery propagation (DGKT/LPKT approximation).
+
+    Propagates mastery signals through prerequisite edges so that high mastery
+    of a prerequisite boosts the posterior estimate of dependent concepts.
+
+    Equation per iteration:
+      h_v = (1-d) × h_v + d × mean(h_u for u in prereqs(v))
+
+    Args:
+        concept_mastery: {concept_id: mastery_estimate}
+        prereq_edges: list of (prereq_id, concept_id) edges
+        dampening: how much prerequisite mastery bleeds into the dependent
+        iterations: number of message-passing rounds
+
+    Returns:
+        Updated {concept_id: mastery_estimate} dict (original not mutated)
+    """
+    updated = dict(concept_mastery)
+    for _ in range(iterations):
+        new_vals: Dict[str, list] = {cid: [] for cid in updated}
+        for prereq_id, concept_id in prereq_edges:
+            if prereq_id in updated and concept_id in new_vals:
+                new_vals[concept_id].append(updated[prereq_id])
+        for concept_id, neighbor_vals in new_vals.items():
+            if neighbor_vals:
+                avg_neighbor = sum(neighbor_vals) / len(neighbor_vals)
+                current = updated[concept_id]
+                updated[concept_id] = (1.0 - dampening) * current + dampening * avg_neighbor
+    return updated
+
+
 def compute_next_question_score(
     question_difficulty: float,
     student_mastery: float,

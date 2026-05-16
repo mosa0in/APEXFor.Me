@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, SmartToy, Lightbulb, Search, Extension, CheckCircle, HelpCircle, PsychologyAlt, Category, ArrowRight, XCircle, ArrowDown } from './icons';
-import { isAIAvailable } from '../services/ai';
-import { getCoachExplanation } from '../services/ai';
+import { X, SmartToy, Lightbulb, Search, Extension, CheckCircle, HelpCircle, PsychologyAlt, Category, ArrowRight, XCircle, ArrowDown, ChevronUp, ChevronDown } from './icons';
+import MarkdownMath from './MarkdownMath';
+import { isAIAvailable, getCoachMessages, getCoachReply } from '../services/ai';
 import type { Question, SolutionStep } from '../data/questions';
 
 interface CoachPanelProps {
@@ -18,14 +18,22 @@ interface ChatMessage {
   options?: 'main' | 'strategies';
   isAI?: boolean;
   isStrategy?: boolean;
+  isSeen?: boolean;
   richContent?: React.ReactNode;
 }
 
 export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoachUsed }: CoachPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [showQuickOptions, setShowQuickOptions] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const msgIdRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastUserMsgIdRef = useRef<number | null>(null);
+  // pending queue for sequential delivery — click chat to skip
+  const pendingRef = useRef<string[]>([]);
+  const deliveryActiveRef = useRef(false);
 
   const scrollToBottom = () => {
     if (chatRef.current) {
@@ -46,7 +54,15 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
   };
 
   const addUserMessage = (text: string) => {
-    setMessages(prev => [...prev, { id: nextId(), text, isUser: true }]);
+    const id = nextId();
+    lastUserMsgIdRef.current = id;
+    setMessages(prev => [...prev, { id, text, isUser: true }]);
+  };
+
+  const markLastUserSeen = () => {
+    const targetId = lastUserMsgIdRef.current;
+    if (targetId === null) return;
+    setMessages(prev => prev.map(m => m.id === targetId ? { ...m, isSeen: true } : m));
   };
 
   const hideAllOptions = () => {
@@ -55,6 +71,62 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
 
   const showBackButton = () => {
     addBotMessage('هل تحتاج مساعدة إضافية؟', 'main');
+  };
+
+  // Deliver an array of messages one-by-one with typing pauses
+  const deliverSequentially = useCallback(async (
+    msgs: string[],
+    onDone?: () => void,
+  ) => {
+    pendingRef.current = [...msgs];
+    deliveryActiveRef.current = true;
+    markLastUserSeen();
+
+    for (let i = 0; i < msgs.length; i++) {
+      if (!deliveryActiveRef.current) break;
+      setIsTyping(true);
+      // typing time proportional to message length (avg ~40ms/char), clamped 400–2200ms
+      const charCount = msgs[i].replace(/\s+/g, '').length;
+      const delay = Math.min(Math.max(400, charCount * 40 + Math.random() * 150), 2200);
+      await new Promise(r => setTimeout(r, delay));
+      if (!deliveryActiveRef.current) break;
+      setIsTyping(false);
+      addBotMessage(msgs[i], undefined, { isAI: true });
+      pendingRef.current = msgs.slice(i + 1);
+    }
+
+    deliveryActiveRef.current = false;
+    pendingRef.current = [];
+    setIsTyping(false);
+    onDone?.();
+  }, []);
+
+  // Tap anywhere in chat to skip remaining typing and dump all pending at once
+  const skipDelivery = useCallback(() => {
+    if (!deliveryActiveRef.current || pendingRef.current.length === 0) return;
+    deliveryActiveRef.current = false;
+    setIsTyping(false);
+    const remaining = [...pendingRef.current];
+    pendingRef.current = [];
+    remaining.forEach(text => addBotMessage(text, undefined, { isAI: true }));
+  }, []);
+
+  const handleSendMessage = async () => {
+    const text = inputText.trim();
+    if (!text || isTyping || deliveryActiveRef.current) return;
+    setInputText('');
+    hideAllOptions();
+    addUserMessage(text);
+    onMarkCoachUsed('free_text');
+
+    if (isAIAvailable() && currentQuestion) {
+      try {
+        const msgs = await getCoachReply(text, currentQuestion);
+        deliverSequentially(msgs);
+        return;
+      } catch {}
+    }
+    deliverSequentially(['فهمت سؤالك! فكّر في المفهوم الأساسي وجرب خطوة صغيرة 💪'], undefined);
   };
 
   const initChat = () => {
@@ -89,9 +161,10 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
     setIsTyping(true);
     if (isAIAvailable() && currentQuestion) {
       try {
-        const response = await getCoachExplanation(currentQuestion, type);
+        const msgs = await getCoachMessages(currentQuestion, type);
         setIsTyping(false);
-        addBotMessage(response, undefined, { isAI: true });
+        deliverSequentially(msgs, () => setTimeout(() => showBackButton(), 400));
+        return;
       } catch {
         setIsTyping(false);
         addBotMessage('عذراً، لم أتمكن من الوصول للكوتش الآن. جرّب الاستراتيجيات المتاحة! 💪');
@@ -107,11 +180,11 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
             : type === 'concept'
             ? `📚 المفهوم: ${currentQuestion.concept}${solutionTip ? `\n\n${solutionTip}` : ''}\n\n${hintText}`
             : `🎯 لا تقلق! خذ الخطوة الأولى:\n\n${hintText}${currentQuestion.hint?.stepLabel ? `\n\n${currentQuestion.hint.stepLabel} ${currentQuestion.hint.stepContent}` : ''}`;
-          addBotMessage(fallback);
+          addBotMessage(fallback, undefined, { isAI: true });
+          setTimeout(() => showBackButton(), 600);
         }
       }, 800);
     }
-    setTimeout(() => showBackButton(), 1500);
   };
 
   // ====== Strategy Handlers (RICH interactive content) ======
@@ -197,8 +270,8 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div ref={chatRef} className="coach-chat-area">
+        {/* Chat Area — tap to skip typing animation */}
+        <div ref={chatRef} className="coach-chat-area" onClick={skipDelivery}>
           {messages.map((msg) => (
             <div key={msg.id} className={`coach-message ${msg.isUser ? 'coach-msg-user' : 'coach-msg-bot'}`}>
               <div className={`coach-bubble ${msg.isUser ? 'coach-bubble-user' : 'coach-bubble-bot'} ${msg.isAI ? 'coach-bubble-ai' : ''} ${msg.isStrategy ? 'coach-bubble-strategy' : ''}`}>
@@ -214,9 +287,15 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
                     <span className="text-[10px] font-bold text-secondary tracking-wider">📚 استراتيجية تفاعلية</span>
                   </div>
                 )}
-                {msg.text && <p className="whitespace-pre-wrap text-sm">{msg.text}</p>}
+                {msg.text && (msg.isAI
+                  ? <MarkdownMath>{msg.text}</MarkdownMath>
+                  : <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
+                )}
                 {msg.richContent && <div className="mt-3">{msg.richContent}</div>}
               </div>
+              {msg.isUser && msg.isSeen && (
+                <span className="text-[9px] text-primary/60 mt-0.5 block text-right pr-1">شاهد ✓✓</span>
+              )}
 
               {/* Main Options */}
               {msg.options === 'main' && (
@@ -253,6 +332,9 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
 
           {isTyping && (
             <div className="coach-message coach-msg-bot">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0 self-end mb-1">
+                <SmartToy className="w-3.5 h-3.5 text-primary" />
+              </div>
               <div className="coach-bubble coach-bubble-bot">
                 <div className="coach-typing"><span /><span /><span /></div>
               </div>
@@ -260,11 +342,42 @@ export default function CoachPanel({ isOpen, onClose, currentQuestion, onMarkCoa
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer — quick options toggle + free text input */}
         <div className="coach-panel-footer">
+          {/* Collapsible quick-options tray */}
+          <div className="mb-2">
+            <button
+              onClick={() => setShowQuickOptions(prev => !prev)}
+              className="flex items-center gap-1 text-[10px] text-primary/60 hover:text-primary transition-colors"
+            >
+              {showQuickOptions ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+              <span>خيارات سريعة</span>
+            </button>
+            {showQuickOptions && (
+              <div className="mt-1.5 grid grid-cols-2 gap-1" style={{ animation: 'page-enter 0.2s ease-out' }}>
+                <button className="coach-option-btn !py-1.5 !text-[11px]" onClick={() => { setShowQuickOptions(false); handleMainOption('مش عارف أبدأ الحل', 'start'); }}>مش عارف أبدأ الحل</button>
+                <button className="coach-option-btn !py-1.5 !text-[11px]" onClick={() => { setShowQuickOptions(false); handleMainOption('في جزئية مش فاهمها', 'concept'); }}>في جزئية مش فاهمها</button>
+                <button className="coach-option-btn !py-1.5 !text-[11px]" onClick={() => { setShowQuickOptions(false); handleMainOption('السؤال صعب عليّ', 'difficulty'); }}>السؤال صعب عليّ</button>
+                <button className="coach-option-btn !py-1.5 !text-[11px]" onClick={() => { setShowQuickOptions(false); handleMainOption('أريد طرق تعلم مختلفة', 'methods'); }}>أريد طرق تعلم مختلفة</button>
+              </div>
+            )}
+          </div>
           <div className="relative flex items-center">
-            <input type="text" disabled placeholder="اختر من الخيارات أعلاه..." className="w-full bg-surface-container-low/60 border border-outline-variant/30 rounded-full py-2.5 px-5 text-sm text-on-surface-variant cursor-not-allowed focus:outline-none" dir="rtl" />
-            <button className="absolute left-2 w-7 h-7 rounded-full bg-surface-container-high/50 flex items-center justify-center text-on-surface-variant/40 cursor-not-allowed">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputText}
+              onChange={e => setInputText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+              placeholder="اكتب سؤالك هنا..."
+              className="w-full bg-surface-container-low/60 border border-outline-variant/30 rounded-full py-2.5 px-5 text-sm text-on-surface focus:outline-none focus:border-primary/40 transition-colors"
+              dir="rtl"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputText.trim() || isTyping}
+              className="absolute left-2 w-7 h-7 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-primary/80 hover:bg-primary text-on-primary"
+            >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             </button>
           </div>

@@ -56,6 +56,8 @@ import {
   AlertCircle,
   Percent,
   Target,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 export {
@@ -116,4 +118,6 @@ export {
   AlertCircle,
   Percent,
   Target,
+  ChevronUp,
+  ChevronDown,
 };

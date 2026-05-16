@@ -3,12 +3,12 @@ APEX — Mastery Router
 Endpoints: get mastery snapshots, upsert mastery
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime
 import json
 
-from api.utils import get_db
+from api.utils import get_db, get_current_student
 
 router = APIRouter(prefix="/api/mastery", tags=["Mastery"])
 
@@ -29,7 +29,9 @@ class MasteryUpdate(BaseModel):
 # ═══════════════════════════════════════════
 
 @router.get("/{student_id}")
-def get_mastery(student_id: str, slug: str = ""):
+def get_mastery(student_id: str, slug: str = "", current_student: str = Depends(get_current_student)):
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     """Get mastery snapshots for a student, optionally filtered by curriculum slug."""
     with get_db() as conn:
         if slug:
@@ -58,8 +60,10 @@ def get_mastery(student_id: str, slug: str = ""):
 
 
 @router.put("/{student_id}/{concept_id}")
-def update_mastery(student_id: str, concept_id: str, data: MasteryUpdate):
+def update_mastery(student_id: str, concept_id: str, data: MasteryUpdate, current_student: str = Depends(get_current_student)):
     """Upsert a mastery snapshot."""
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         conn.execute("""
             INSERT INTO mastery_snapshots (student_id, concept_id, mastery_estimate,

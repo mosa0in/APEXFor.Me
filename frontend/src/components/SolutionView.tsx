@@ -2,7 +2,7 @@ import React from 'react';
 import { useSession } from '../context/SessionContext';
 import { CheckCircle, Lightbulb, BrainCircuit } from './icons';
 
-export default function SolutionView({ onBack }: { onBack: () => void }) {
+export default function SolutionView({ onBack, onNext }: { onBack: () => void; onNext?: () => void }) {
   const { currentQuestion } = useSession();
 
   if (!currentQuestion) return null;
@@ -55,8 +55,8 @@ export default function SolutionView({ onBack }: { onBack: () => void }) {
             </p>
           </div>
           
-          <button onClick={onBack} className="btn-primary w-full py-4 rounded-xl mt-auto" aria-label="العودة للأسئلة">
-            فهمت، لنعد للأسئلة
+          <button onClick={onNext ?? onBack} className="btn-primary w-full py-4 rounded-xl mt-auto" aria-label={onNext ? 'فهمت، انتقل للتالي' : 'العودة للأسئلة'}>
+            {onNext ? 'فهمت، التالي ←' : 'فهمت، لنعد للأسئلة'}
             <CheckCircle className="w-5 h-5" />
           </button>
         </div>

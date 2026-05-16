@@ -10,9 +10,9 @@ import random
 from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 
-from api.utils import get_db, slugify, UPLOAD_DIR
+from api.utils import get_db, slugify, UPLOAD_DIR, get_current_student
 
 router = APIRouter(prefix="/api/curricula", tags=["Curricula"])
 
@@ -43,22 +43,21 @@ def _infer_question_type(text: str, options: list, explicit_type: str = "") -> s
 
 
 @router.get("")
-def list_curricula(student_id: Optional[str] = None):
+def list_curricula(current_student: str = Depends(get_current_student)):
     with get_db() as conn:
         sql = """SELECT id, slug, name, book_title, language, pdf_filename,
                        total_chapters, total_sections, total_concepts, total_exercises,
                        status, error_message, created_at, updated_at FROM curricula"""
-        if student_id:
-            rows = conn.execute(sql + " WHERE student_id = ? ORDER BY created_at DESC", (student_id,)).fetchall()
-        else:
-            rows = conn.execute(sql + " ORDER BY created_at DESC").fetchall()
+        rows = conn.execute(sql + " WHERE student_id = ? ORDER BY created_at DESC", (current_student,)).fetchall()
     return [dict(r) for r in rows]
 
 
 @router.get("/{slug}")
-def get_curriculum(slug: str):
+def get_curriculum(slug: str, current_student: str = Depends(get_current_student)):
     with get_db() as conn:
-        row = conn.execute("SELECT * FROM curricula WHERE slug = ?", (slug,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM curricula WHERE slug = ? AND student_id = ?", (slug, current_student)
+        ).fetchone()
     if not row:
         raise HTTPException(404, "Curriculum not found")
     result = dict(row)
@@ -70,11 +69,11 @@ def get_curriculum(slug: str):
 
 
 @router.get("/{slug}/stats")
-def get_curriculum_stats(slug: str):
+def get_curriculum_stats(slug: str, current_student: str = Depends(get_current_student)):
     with get_db() as conn:
         cur = conn.execute(
-            "SELECT id, name, book_title, total_concepts, total_exercises, total_sections, curriculum_json FROM curricula WHERE slug = ?",
-            (slug,)).fetchone()
+            "SELECT id, name, book_title, total_concepts, total_exercises, total_sections, curriculum_json FROM curricula WHERE slug = ? AND student_id = ?",
+            (slug, current_student)).fetchone()
         if not cur:
             raise HTTPException(404, "Curriculum not found")
         concepts = conn.execute("SELECT * FROM concepts WHERE curriculum_id = ?", (cur["id"],)).fetchall()
@@ -119,17 +118,18 @@ def get_curriculum_stats(slug: str):
 
 
 @router.get("/{slug}/concepts")
-def get_curriculum_concepts(slug: str, student_id: Optional[str] = None):
+def get_curriculum_concepts(slug: str, student_id: Optional[str] = None, current_student: str = Depends(get_current_student)):
     """Return concepts with resolved prerequisites and optional per-student accuracy."""
     with get_db() as conn:
-        cur = conn.execute("SELECT id FROM curricula WHERE slug = ?", (slug,)).fetchone()
+        cur = conn.execute("SELECT id FROM curricula WHERE slug = ? AND student_id = ?", (slug, current_student)).fetchone()
         if not cur:
             raise HTTPException(404, "Curriculum not found")
         curriculum_id = cur["id"]
 
         rows = conn.execute("""
             SELECT concept_id as id, name, description, section_title,
-                   difficulty_level, is_core, exercise_count, prerequisites
+                   difficulty_level, is_core, exercise_count, prerequisites,
+                   COALESCE(external_prerequisites, '[]') as external_prerequisites
             FROM concepts WHERE curriculum_id = ? ORDER BY rowid
         """, (curriculum_id,)).fetchall()
 
@@ -157,13 +157,16 @@ def get_curriculum_concepts(slug: str, student_id: Optional[str] = None):
     for r in rows:
         d = dict(r)
         prereq_ids: list[str] = json.loads(d.get("prerequisites", "[]") or "[]")
-        # Resolve prerequisite IDs → {id, name} objects
         d["prerequisites"] = [
             {"id": pid, "name": name_lookup.get(pid, pid)}
             for pid in prereq_ids
         ]
+        # Parse external prerequisites (CON_EXT nodes)
+        try:
+            d["external_prerequisites"] = json.loads(d.get("external_prerequisites", "[]") or "[]")
+        except (json.JSONDecodeError, TypeError):
+            d["external_prerequisites"] = []
         d["is_core"] = bool(d.get("is_core", 1))
-        # Attach mastery/accuracy if student was provided
         if student_id:
             m = mastery_lookup.get(d["id"], {})
             d["mastery_estimate"] = m.get("mastery_estimate", None)
@@ -173,10 +176,10 @@ def get_curriculum_concepts(slug: str, student_id: Optional[str] = None):
 
 
 @router.get("/{slug}/diagnostic-questions")
-def get_diagnostic_questions(slug: str, max_questions: int = 30):
+def get_diagnostic_questions(slug: str, max_questions: int = 30, current_student: str = Depends(get_current_student)):
     """Extract diagnostic questions from curriculum JSON."""
     with get_db() as conn:
-        cur = conn.execute("SELECT id, curriculum_json FROM curricula WHERE slug = ?", (slug,)).fetchone()
+        cur = conn.execute("SELECT id, curriculum_json FROM curricula WHERE slug = ? AND student_id = ?", (slug, current_student)).fetchone()
     if not cur:
         raise HTTPException(404, "Curriculum not found")
     try:
@@ -218,6 +221,7 @@ def get_diagnostic_questions(slug: str, max_questions: int = 30):
                         "conceptId": con_id, "concept": con_name, "sectionTitle": sec_title,
                         "sectionType": "main", "difficulty": diff_map.get(q_diff, 2),
                         "options": formatted_options, "correctIndex": correct_index, "correctAnswer": q_correct,
+                        "answerHint": q.get("answer_hint", ""),
                     })
                     q_id += 1
 
@@ -243,11 +247,12 @@ def get_diagnostic_questions(slug: str, max_questions: int = 30):
 
 
 @router.post("/upload")
-async def upload_curriculum(file: UploadFile = File(...), name: str = Form(""), student_id: str = Form("")):
+async def upload_curriculum(file: UploadFile = File(...), name: str = Form(""), student_id: str = Form(""), current_student: str = Depends(get_current_student)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF files are accepted")
     curriculum_name = name.strip() or file.filename.replace(".pdf", "").replace("_", " ")
     slug = slugify(curriculum_name)
+    effective_student_id = current_student  # Always use token identity
     with get_db() as conn:
         existing = conn.execute("SELECT id FROM curricula WHERE slug = ?", (slug,)).fetchone()
         if existing:
@@ -259,7 +264,7 @@ async def upload_curriculum(file: UploadFile = File(...), name: str = Form(""), 
             content = await file.read()
             f.write(content)
         conn.execute("INSERT INTO curricula (slug, student_id, name, pdf_filename, status) VALUES (?, ?, ?, ?, 'processing')",
-                     (slug, student_id, curriculum_name, safe_filename))
+                     (slug, effective_student_id, curriculum_name, safe_filename))
         conn.commit()
         cur_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     from api.pipeline import run_pipeline_async
@@ -269,11 +274,13 @@ async def upload_curriculum(file: UploadFile = File(...), name: str = Form(""), 
 
 
 @router.delete("/{slug}")
-def delete_curriculum(slug: str):
+def delete_curriculum(slug: str, current_student: str = Depends(get_current_student)):
     with get_db() as conn:
-        cur = conn.execute("SELECT id, pdf_filename FROM curricula WHERE slug = ?", (slug,)).fetchone()
+        cur = conn.execute("SELECT id, pdf_filename, student_id FROM curricula WHERE slug = ?", (slug,)).fetchone()
         if not cur:
             raise HTTPException(404, "Curriculum not found")
+        if cur["student_id"] != current_student:
+            raise HTTPException(403, "Access denied")
         conn.execute("DELETE FROM concepts WHERE curriculum_id = ?", (cur["id"],))
         conn.execute("DELETE FROM curricula WHERE id = ?", (cur["id"],))
         conn.commit()

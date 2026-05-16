@@ -3,8 +3,8 @@ APEX — Knowledge Graph Router
 Endpoints: concept context, prereq-chain, summary, interpolate
 """
 
-from fastapi import APIRouter, HTTPException
-from api.utils import get_db
+from fastapi import APIRouter, HTTPException, Depends
+from api.utils import get_db, get_current_student
 from src.graph_engine import SQLiteGraphEngine
 
 router = APIRouter(prefix="/api/graph", tags=["Knowledge Graph"])
@@ -41,7 +41,9 @@ def api_graph_summary(curriculum_slug: str):
 
 
 @router.get("/interpolate/{student_id}/{concept_id}")
-def api_interpolate_mastery(student_id: str, concept_id: str):
+def api_interpolate_mastery(student_id: str, concept_id: str, current_student: str = Depends(get_current_student)):
+    if current_student != student_id:
+        raise HTTPException(403, "Access denied")
     with get_db() as conn:
         mastery_rows = conn.execute(
             "SELECT concept_id, mastery_estimate FROM mastery_snapshots WHERE student_id = ?",
